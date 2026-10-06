@@ -43,6 +43,12 @@ export default function mdLog(pi: ExtensionAPI) {
 				lastLinkData = entry.data as { file: string | null } | undefined;
 			}
 		}
+		// Fresh session launched with PI_MD_LOG=<existing .md file>: auto-link it.
+		const envFile = process.env.PI_MD_LOG;
+		if (!lastLinkData?.file && envFile && fs.existsSync(envFile)) {
+			lastLinkData = { file: path.resolve(envFile) };
+			pi.appendEntry("md-log", lastLinkData);
+		}
 		if (lastLinkData?.file) {
 			logFile = lastLinkData.file;
 			const theme = ctx.ui.theme;

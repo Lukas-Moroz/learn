@@ -497,6 +497,12 @@ async function askSingleChoice(
 				}
 
 				// focus === "options"
+				// Number keys jump to that option (Enter still confirms).
+				if (/^[1-9]$/.test(data) && Number(data) <= allOptions.length) {
+					optionIndex = Number(data) - 1;
+					refresh();
+					return;
+				}
 				if (matchesKey(data, Key.up)) {
 					optionIndex = Math.max(0, optionIndex - 1);
 					refresh();
@@ -575,7 +581,7 @@ async function askSingleChoice(
 				if (focus === "note") {
 					add(theme.fg("dim", " Type note • Ctrl+J newline • Enter back to options • Tab options • Esc back"));
 				} else {
-					add(theme.fg("dim", " ↑↓ navigate • Enter answer • Tab note • Esc cancel"));
+					add(theme.fg("dim", " ↑↓ or 1-9 select • Enter answer • Tab note • Esc cancel"));
 				}
 				add(theme.fg("accent", "─".repeat(width)));
 				// Not cached when the note is focused: the editor renders a live cursor.
