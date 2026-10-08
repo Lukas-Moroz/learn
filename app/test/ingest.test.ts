@@ -125,3 +125,12 @@ describe("source alignment", () => {
     expect(refs[0].label).toBe("Lecture 4, page 9");
   });
 });
+
+import { pageSpan } from "../src/server/alignment/refs.ts";
+describe("page spans", () => {
+  it("never merge non-contiguous pages into a range", () => {
+    expect(pageSpan([4, 12])).toEqual({ page: 4 });
+    expect(pageSpan([9, 10, 12])).toEqual({ page: 9, pageEnd: 10 });
+    expect(pageSpan([])).toBeNull();
+  });
+});

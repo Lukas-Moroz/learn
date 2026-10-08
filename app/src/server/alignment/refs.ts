@@ -63,9 +63,14 @@ export function provenanceFor(refs: SourceRef[]): Provenance {
   return refs.some((r) => r.verified) ? "source" : "supplementary";
 }
 
-/** Compact a list of pages into a ref range label: [8,9,10,12] → 8–12 (for display). */
+/** The first contiguous run of pages: [8,9,10,12] → 8–10. Never implies pages that weren't cited. */
 export function pageSpan(pages: number[]): { page: number; pageEnd?: number } | null {
   if (pages.length === 0) return null;
-  const sorted = [...pages].sort((a, b) => a - b);
-  return sorted.length > 1 ? { page: sorted[0], pageEnd: sorted[sorted.length - 1] } : { page: sorted[0] };
+  const sorted = [...new Set(pages)].sort((a, b) => a - b);
+  let end = sorted[0];
+  for (const p of sorted.slice(1)) {
+    if (p !== end + 1) break;
+    end = p;
+  }
+  return end > sorted[0] ? { page: sorted[0], pageEnd: end } : { page: sorted[0] };
 }
