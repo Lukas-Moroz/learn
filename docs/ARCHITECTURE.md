@@ -32,7 +32,7 @@ Pi streams JSONL events and forwards extension UI requests. Rejected as the core
 
 ## 3. Stack
 
-- **Server:** Node 22 + TypeScript (run with `tsx`), Express 5, `better-sqlite3@11` (v13 segfaults on Node 22.9), zod schemas shared with the client.
+- **Server:** Node ≥ 22.13 + TypeScript (run with `tsx`), Express 5, Node's built-in `node:sqlite` behind a small adapter (`db/database.ts`), zod schemas shared with the client. `better-sqlite3` was tried first and dropped: v13 segfaulted on Node 22.9 and v11 crashed in Node 24's garbage collector, and a native module that breaks on every `nvm use` is the wrong trade for a personal tool.
 - **Client:** React + Vite. KaTeX via `remark-math`/`rehype-katex`, Mermaid (lazy), PDF.js for source pages. Everything is bundled locally, with no CDN, so saved lessons work offline.
 - **Storage:** `~/.learn` by default (`LEARN_DATA_DIR` overrides): `learn.db` (WAL), `sources/` (original files by content hash), `exports/` (Markdown), `secrets/` (encrypted provider state).
 - **One command:** `npm start` in `app/` builds the client, starts the server on `127.0.0.1:4317` and opens the browser.
