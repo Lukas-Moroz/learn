@@ -258,4 +258,8 @@ details.expand > summary { cursor: pointer; color: var(--text-2); font-weight: 5
   .equation .terms dt { text-align: left; }
   .checkpoint dl { grid-template-columns: 1fr; }
   .crumbs { display: none; }
+  .brand-text { display: none; }
+  .topbar-inner { gap: 0.4rem; padding: 0.5rem 0.75rem; justify-content: space-between; }
+  .topbar-actions { gap: 0; }
+  .topbar-actions .btn.small { padding: 0.25rem 0.45rem; }
 }

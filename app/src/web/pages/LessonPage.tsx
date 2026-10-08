@@ -24,6 +24,7 @@ export function LessonPage({ lessonId }: { lessonId: string }) {
   const [panel, setPanel] = useState(false);
   const [showRecap, setShowRecap] = useState(false);
   const continueBtn = useRef<HTMLButtonElement>(null);
+  const recapRef = useRef<HTMLElement>(null);
   const firstLoad = useRef(true);
 
   const load = useCallback(async () => {
@@ -56,13 +57,14 @@ export function LessonPage({ lessonId }: { lessonId: string }) {
       if (!firstLoad.current) return;
       firstLoad.current = false;
       if (v.blocks.length === 0) advance();
-      else {
-        setShowRecap(Boolean(v.recap));
-        const anchor = v.recap?.anchorBlockId;
-        if (anchor) requestAnimationFrame(() => document.getElementById(anchor)?.scrollIntoView({ block: "start" }));
-      }
+      else setShowRecap(Boolean(v.recap));
     }, (e) => setError(e));
   }, [load, advance]);
+
+  // On resume, bring the recap (with its Continue button) into view once it has rendered.
+  useEffect(() => {
+    if (showRecap) recapRef.current?.scrollIntoView({ block: "center" });
+  }, [showRecap]);
 
   // Live progress of generation for this lesson.
   useEffect(() => {
@@ -209,7 +211,7 @@ export function LessonPage({ lessonId }: { lessonId: string }) {
           {view.blocks.map(render)}
 
           {showRecap && view.recap && (
-            <section className="recap" aria-label="Where you left off">
+            <section className="recap" aria-label="Where you left off" ref={recapRef}>
               <div className="kicker">Welcome back · last active {new Date(view.recap.lastActive).toLocaleString()}</div>
               <ul>
                 {view.recap.lines.map((l, i) => (
@@ -219,11 +221,19 @@ export function LessonPage({ lessonId }: { lessonId: string }) {
                 ))}
               </ul>
               {pending ? (
-                <button className="btn primary" onClick={() => {
-                  setShowRecap(false);
-                  document.getElementById(view.recap!.anchorBlockId ?? "")?.scrollIntoView({ behavior: "smooth", block: "start" });
-                }}>
+                <button
+                  className="btn primary"
+                  autoFocus
+                  onClick={() => {
+                    setShowRecap(false);
+                    document.getElementById(view.recap!.anchorBlockId ?? "")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                  }}
+                >
                   Continue: answer the open question
+                </button>
+              ) : !view.state.complete ? (
+                <button className="btn primary" autoFocus onClick={advance}>
+                  Continue
                 </button>
               ) : null}
             </section>
@@ -245,7 +255,7 @@ export function LessonPage({ lessonId }: { lessonId: string }) {
                   </button>
                 )}
               </div>
-            ) : canContinue ? (
+            ) : canContinue && !showRecap ? (
               <>
                 <button ref={continueBtn} className="btn primary large" onClick={advance}>
                   Continue

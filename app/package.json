@@ -5,7 +5,7 @@
   "type": "module",
   "description": "Learn 2.0 — local-first adaptive learning environment",
   "engines": {
-    "node": ">=22.5"
+    "node": ">=22.13"
   },
   "scripts": {
     "start": "npm run build:web && tsx src/server/index.ts",
@@ -16,10 +16,13 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "eval:live": "LEARN_LIVE_EVAL=1 vitest run --config vitest.live.config.ts"
+    "eval:live": "LEARN_LIVE_EVAL=1 vitest run --config vitest.live.config.ts",
+    "prestart": "node scripts/check-node.mjs",
+    "predev": "node scripts/check-node.mjs",
+    "pretest": "node scripts/check-node.mjs",
+    "preseed:demo": "node scripts/check-node.mjs"
   },
   "dependencies": {
-    "better-sqlite3": "^11.10.0",
     "express": "^5.2.1",
     "jszip": "^3.10.2",
     "katex": "^0.19.0",
@@ -35,7 +38,6 @@
     "zod": "^4.6.5"
   },
   "devDependencies": {
-    "@types/better-sqlite3": "^9.6.0",
     "@types/express": "^5.0.6",
     "@types/node": "^26.6.4",
     "@types/react": "^19.3.0",

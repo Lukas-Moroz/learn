@@ -782,16 +782,17 @@ export class Engine {
 }
 
 export function feedbackMessage(correct: boolean | null, confidence: string | null, reasoning: string | null, misconception: string | null): string {
-  if (correct === null) return "“I don't know” is useful information: it marks a gap to teach, not a mistake to undo.";
+  // The UI already shows the verdict (Correct / Not quite); this adds what it means.
+  if (correct === null) return "That's useful information: it marks a gap to teach, not a mistake to undo.";
   if (correct) {
-    if (reasoning === "flawed" || reasoning === "off_topic") return "Right answer, but the written reasoning doesn't support it, so this counts only as recognition, not understanding.";
-    if (confidence === "guess") return "Correct, but since it was a guess it doesn't count as evidence yet.";
-    if (confidence === "unsure") return "Correct. You weren't sure, so it's recorded as tentative; another question will confirm it.";
-    return "Correct.";
+    if (reasoning === "flawed" || reasoning === "off_topic") return "The answer is right, but the written reasoning doesn't support it, so this counts only as recognition, not understanding.";
+    if (confidence === "guess") return "Since it was a guess, it doesn't count as evidence yet.";
+    if (confidence === "unsure") return "You weren't sure, so it's recorded as tentative; another question will confirm it.";
+    return "";
   }
-  const hint = misconception ? ` The option you chose usually reflects this idea: *${misconception}*.` : "";
-  if (confidence === "sure") return `Not quite. Because you were sure, this looks like a firmly held idea worth examining.${hint}`;
-  return `Not quite.${hint}`;
+  const hint = misconception ? `The option you chose usually reflects this idea: *${misconception}*.` : "";
+  if (confidence === "sure") return `Because you were sure, this looks like a firmly held idea worth examining. ${hint}`.trim();
+  return hint;
 }
 
 /** Drop analysis pages outside the document and names missing from the concept list. */

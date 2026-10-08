@@ -1,8 +1,77 @@
-import Database from "better-sqlite3";
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
+import { DatabaseSync, type SQLInputValue } from "node:sqlite";
 
-export type DB = Database.Database;
+// Node's built-in SQLite (no native add-on to rebuild when Node changes). This thin
+// adapter provides the small better-sqlite3-style surface the repository uses:
+// prepare().run/get/all, exec, pragma, and nestable transactions (via savepoints).
+type Params = unknown[];
+
+export interface Statement {
+  run(...params: Params): { changes: number | bigint; lastInsertRowid: number | bigint };
+  get(...params: Params): unknown;
+  all(...params: Params): unknown[];
+}
+
+export class DB {
+  private readonly raw: DatabaseSync;
+  private depth = 0;
+  private cache = new Map<string, Statement>();
+
+  constructor(file: string) {
+    this.raw = new DatabaseSync(file);
+  }
+
+  prepare(sql: string): Statement {
+    let st = this.cache.get(sql);
+    if (!st) {
+      const s = this.raw.prepare(sql);
+      // Accept either positional values or one object of named values (keys without the "@").
+      const args = (p: Params) => (p.length === 1 && p[0] !== null && typeof p[0] === "object" ? [p[0] as Record<string, SQLInputValue>] : (p as SQLInputValue[]));
+      st = {
+        run: (...p) => s.run(...(args(p) as [SQLInputValue])),
+        get: (...p) => s.get(...(args(p) as [SQLInputValue])),
+        all: (...p) => s.all(...(args(p) as [SQLInputValue])),
+      };
+      this.cache.set(sql, st);
+    }
+    return st;
+  }
+
+  exec(sql: string) {
+    this.raw.exec(sql);
+  }
+
+  pragma(sql: string, opts: { simple?: boolean } = {}): unknown {
+    const rows = this.raw.prepare(`PRAGMA ${sql}`).all() as Record<string, unknown>[];
+    return opts.simple ? (rows[0] ? Object.values(rows[0])[0] : undefined) : rows;
+  }
+
+  /** Returns a function that runs `fn` atomically. Nested calls become savepoints. */
+  transaction<T>(fn: () => T): () => T {
+    return () => {
+      const outer = this.depth === 0;
+      const sp = `sp${this.depth}`;
+      this.raw.exec(outer ? "BEGIN IMMEDIATE" : `SAVEPOINT ${sp}`);
+      this.depth++;
+      try {
+        const out = fn();
+        this.depth--;
+        this.raw.exec(outer ? "COMMIT" : `RELEASE ${sp}`);
+        return out;
+      } catch (e) {
+        this.depth--;
+        this.raw.exec(outer ? "ROLLBACK" : `ROLLBACK TO ${sp}; RELEASE ${sp}`);
+        throw e;
+      }
+    };
+  }
+
+  close() {
+    this.cache.clear();
+    this.raw.close();
+  }
+}
 
 // Append-only list of migrations. Never edit a shipped entry; add a new one.
 const MIGRATIONS: string[] = [
@@ -109,7 +178,7 @@ const MIGRATIONS: string[] = [
 
 export function openDatabase(file: string): DB {
   if (file !== ":memory:") mkdirSync(dirname(file), { recursive: true });
-  const db = new Database(file);
+  const db = new DB(file);
   db.pragma("journal_mode = WAL");
   // FULL: an answer the server acknowledged survives power loss, not just a process crash.
   db.pragma("synchronous = FULL");

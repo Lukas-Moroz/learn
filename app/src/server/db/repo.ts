@@ -498,9 +498,9 @@ export class Repo {
   }
   /** On boot: any job still "running" was cut off by a crash or restart. Its partial output is never used. */
   markInterruptedJobs(): number {
-    return this.db
-      .prepare("UPDATE ai_jobs SET status = 'interrupted', finished_at = ? WHERE status = 'running'")
-      .run(now()).changes;
+    return Number(
+      this.db.prepare("UPDATE ai_jobs SET status = 'interrupted', finished_at = ? WHERE status = 'running'").run(now()).changes,
+    );
   }
   cacheGet(key: string): unknown | undefined {
     const r = this.db.prepare("SELECT json FROM ai_cache WHERE key = ?").get(key) as { json: string } | undefined;

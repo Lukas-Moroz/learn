@@ -29,11 +29,11 @@ export function TopBar({ crumbs, children, progress }: { crumbs?: ReactNode; chi
   return (
     <header className="topbar">
       <div className="topbar-inner">
-        <a className="brand" href="#/">
+        <a className="brand" href="#/" aria-label="Learn: home">
           <span className="brand-mark" aria-hidden>
             L
           </span>
-          Learn
+          <span className="brand-text">Learn</span>
         </a>
         <div className="crumbs">{crumbs}</div>
         <nav className="topbar-actions" aria-label="App">
