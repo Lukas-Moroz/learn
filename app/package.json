@@ -1,0 +1,53 @@
+{
+  "name": "learn-app",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Learn 2.0 — local-first adaptive learning environment",
+  "engines": {
+    "node": ">=22.5"
+  },
+  "scripts": {
+    "start": "npm run build:web && tsx src/server/index.ts",
+    "dev": "concurrently -k -n server,web \"tsx watch src/server/index.ts --no-open\" \"vite\"",
+    "build:web": "vite build",
+    "seed:demo": "tsx scripts/seed-demo.ts",
+    "setup:openai": "bash scripts/setup-openai.sh",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "eval:live": "LEARN_LIVE_EVAL=1 vitest run --config vitest.live.config.ts"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.10.0",
+    "express": "^5.2.1",
+    "jszip": "^3.10.2",
+    "katex": "^0.19.0",
+    "mermaid": "^11.17.2",
+    "open": "^11.0.4",
+    "pdfjs-dist": "^5.6.205",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "react-markdown": "^10.1.0",
+    "rehype-katex": "^7.0.1",
+    "remark-gfm": "^4.0.1",
+    "remark-math": "^6.0.0",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^9.6.0",
+    "@types/express": "^5.0.6",
+    "@types/node": "^26.6.4",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@types/supertest": "^7.2.1",
+    "@vitejs/plugin-react": "^4.7.0",
+    "concurrently": "^10.0.5",
+    "pdf-lib": "^1.17.1",
+    "supertest": "^7.3.1",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vite": "^6.4.4",
+    "vitest": "^4.1.11"
+  }
+}

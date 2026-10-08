@@ -16,3 +16,8 @@ __pycache__/
 # Runtime state
 .memory/
 *.log
+
+# Learn app
+app/dist/
+app/vendor/
+app/.learn-dev/
