@@ -292,7 +292,7 @@ describe("source-driven lessons", () => {
     const lecture3 = [
       ["Lecture 3: Conditional Probability"],
       ["Probability", "A probability is the share of outcomes an event covers."],
-      ["Conditional probability", "Restrict to outcomes where B occurred, then renormalise."],
+      ["Conditional probability", "Restrict to outcomes where B occurred, then renormalise: the share of B's outcomes also in A."],
       ["Chain rule of probability", "Any joint probability is a product of conditionals."],
     ];
     const l3 = await importFile(ctx.repo, ctx.dataDir, { courseId: course.id, data: await makePdf(lecture3), filename: "Lecture 3.pdf" });
@@ -309,6 +309,7 @@ describe("source-driven lessons", () => {
     now = new Date("2026-03-02T09:00:00Z");
     const lesson4 = await ctx.engine.startLectureLesson(l4.lecture.id);
     expect(ctx.repo.listConcepts().filter((c) => c.slug === "conditional-probability")).toHaveLength(1);
+    expect(ctx.repo.listConcepts().filter((c) => c.name === "Conditional probability")).toHaveLength(1);
     // …and demonstrated prerequisites are not re-taught.
     await runLesson(ctx, lesson4.id, { misconceptions: {}, fixedBy: {} }, { stop: (c) => c.repo.getLesson(lesson4.id)!.state.conceptId === c.repo.findConceptBySlug("markov-assumption")!.id });
     expect(blocksOf(ctx, lesson4.id, cp.id).filter((b) => b.type === "explanation" || b.type === "question")).toHaveLength(0);

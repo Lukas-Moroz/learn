@@ -129,3 +129,30 @@ export function optionShapeProblem(options: QuestionOption[], correctValues: str
   if (minLen === 0) return "empty option";
   return null;
 }
+
+// Generated explanations tend to cite options by their value ("Option B reverses…"), but the
+// learner only sees the shuffled, numbered display order, so such a reference can appear to
+// contradict the visible choices.
+const VALUE_REF = /\b([Oo]ptions?|[Cc]hoices?|[Aa]nswers?|[Dd]istractors?)\s+\(?([A-H]|[1-9])\)?(?![\w'’])|(?<![\w\\{}$])\(([A-H])\)/g;
+const POSITION_REF = /\b(first|second|third|fourth|fifth|last|top|bottom)\s+(option|choice|answer|distractor)\b/i;
+
+/** Rewrite references to option values as the choice number the learner sees (options in display order). */
+export function visibleOptionRefs(text: string, displayOrder: QuestionOption[]): string {
+  const number = new Map(displayOrder.map((o, i) => [o.value, i + 1]));
+  return text.replace(VALUE_REF, (m, word: string | undefined, id: string | undefined, bare: string | undefined) => {
+    const n = number.get((id ?? bare)!);
+    if (!n) return m;
+    return word ? `${word.replace(/s$/, "")} ${n}` : `(choice ${n})`;
+  });
+}
+
+/** A reference the learner can't resolve after shuffling: a position, or a letter/number that is no option's value. */
+export function hiddenOptionReference(text: string, options: QuestionOption[]): string | null {
+  const position = POSITION_REF.exec(text);
+  if (position) return `refers to "${position[0]}", but options are shuffled for display; refer to the option's text instead`;
+  const values = new Set(options.map((o) => o.value));
+  for (const m of text.matchAll(VALUE_REF)) {
+    if (!values.has((m[2] ?? m[3])!)) return `refers to "${m[0].trim()}", which is not an option value; refer to the option's text instead`;
+  }
+  return null;
+}

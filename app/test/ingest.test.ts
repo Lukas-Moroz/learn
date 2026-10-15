@@ -1,10 +1,11 @@
 import JSZip from "jszip";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { PDFDict, PDFDocument, PDFName, StandardFonts } from "pdf-lib";
 import { describe, expect, it } from "vitest";
 import { validateRefs } from "../src/server/alignment/refs.ts";
-import { extractionStats, extractPptx } from "../src/server/ingest/extract.ts";
-import { importFile, importFolder, orderLectureFiles } from "../src/server/ingest/import.ts";
+import { extractionStats, extractPdf, extractPptx } from "../src/server/ingest/extract.ts";
+import { importFile, importFolder, orderLectureFiles, titleFromFilename } from "../src/server/ingest/import.ts";
 import { MARKOV_LECTURE, makePdf, testContext, tmpDir } from "./helpers.ts";
 
 describe("PDF ingestion", () => {
@@ -84,6 +85,80 @@ describe("PDF ingestion", () => {
     ctx.repo.reorderLectures(course.id, [ids[1], ids[0], ids[2]]);
     await importFolder(ctx.repo, ctx.dataDir, course.id, dir);
     expect(ctx.repo.listLectures(course.id).map((l) => l.title)).toEqual(["Lecture 2", "Lecture 1", "Lecture 10"]);
+  });
+
+  it("orders real course filenames: parts after a date, MMDDYYYY dates, exam documents", () => {
+    const lectures = [
+      "ICS Lecture 1 08252026.pdf",
+      "ICS691G Lecture 2 08272026 Annotated.pdf",
+      "ICS691G Lecture 5 09082026 Part 1 Annotated.pdf",
+      "ICS691G Lecture 5 09082026 Annotated Part 2.pdf",
+      "ICS691G Lecture 5 09082026 Annotated Part 10.pdf",
+      "ICS691G_Lec6_09102026_Annotated.pdf",
+      "ICS691G_Lec9_09242026 Annotated.pdf",
+      "ICS691G_Lec10_09292026_Annotated.pdf",
+    ];
+    expect(orderLectureFiles([...lectures].reverse())).toEqual(lectures);
+    expect(orderLectureFiles(["Fall2026 Lecture 10.pdf", "Fall2026 Lecture 2.pdf"])).toEqual(["Fall2026 Lecture 2.pdf", "Fall2026 Lecture 10.pdf"]);
+    const study = [
+      "ICS691G_Exam_1_Practice_Problems.pdf",
+      "ICS691G_Exam_1_Practice_Problems_Solutions.pdf",
+      "ICS691G_Exam1_StudyGuide.pdf",
+      "ICS691G_Exam_2_Study_Guide.pdf",
+      "ICS691G_Exam_2_Study_Guide_Solutions.pdf",
+      "ICS691G_Exam_10_Study_Guide.pdf",
+    ];
+    expect(orderLectureFiles([...study].reverse())).toEqual(study);
+    expect(orderLectureFiles(["notes 09102026.pdf", "notes 2026-09-01.pdf", "notes 08272026.pdf"])).toEqual(["notes 08272026.pdf", "notes 2026-09-01.pdf", "notes 09102026.pdf"]);
+  });
+
+  it("titles numbered lectures without course code, date or 'Annotated'", () => {
+    expect(titleFromFilename("ICS691G_Lec10_09292026_Annotated.pdf")).toBe("Lecture 10");
+    expect(titleFromFilename("ICS Lecture 1 08252026.pdf")).toBe("Lecture 1");
+    expect(titleFromFilename("ICS691G Lecture 5 09082026 Part 1 Annotated.pdf")).toBe("Lecture 5 Part 1");
+    expect(titleFromFilename("ICS691G Lecture 5 09082026 Annotated Part 2.pdf")).toBe("Lecture 5 Part 2");
+    expect(titleFromFilename("Lecture 3 (2026-09-01).pdf")).toBe("Lecture 3");
+    expect(titleFromFilename("Intro to ML Lecture 3.pdf")).toBe("Intro to ML Lecture 3");
+    expect(titleFromFilename("ICS691G_Exam_2_Study_Guide.pdf")).toBe("ICS691G Exam 2 Study Guide");
+  });
+
+  it("glues ligatures pdf.js splits into their own items and reads U+0000 space glyphs as spaces", async () => {
+    const doc = await PDFDocument.create();
+    const sans = await doc.embedFont(StandardFonts.Helvetica);
+    const bold = await doc.embedFont(StandardFonts.HelveticaBold);
+    const nul = await doc.embedFont(StandardFonts.Courier);
+    const page = doc.addPage([720, 405]);
+    const line = (y: number, runs: [string, typeof sans][]) => {
+      let x = 40;
+      for (const [t, font] of runs) {
+        page.drawText(t, { x, y, size: 20, font });
+        x += font.widthOfTextAtSize(t, 20);
+      }
+    };
+    // A ligature in its own item, flush against its word (as in Keynote/Notability slides).
+    line(300, [["Suf", sans], ["fi", bold], ["x", sans], [" Trie", sans]]);
+    // A space glyph whose ToUnicode entry is U+0000 (as in the Notability exports).
+    line(200, [["Build", sans], ["A", nul], ["a", sans], ["A", nul], ["trie", sans]]);
+    // A real gap with no space glyph is still a word break.
+    page.drawText("Symbol", { x: 40, y: 100, size: 20, font: sans });
+    page.drawText("u", { x: 200, y: 100, size: 20, font: sans });
+    // Map Courier's "A" to U+0000. After drawing: drawing re-embeds the font dict on save.
+    await nul.embed();
+    const cmap = "/CIDInit /ProcSet findresource begin 12 dict begin begincmap /CMapName /NulSpace def 1 begincodespacerange <00> <FF> endcodespacerange 1 beginbfchar <41> <0000> endbfchar endcmap CMapName currentdict /CMap defineresource pop end end";
+    doc.context.lookup(nul.ref, PDFDict).set(PDFName.of("ToUnicode"), doc.context.register(doc.context.stream(cmap)));
+    const [text] = await extractPdf(await doc.save({ useObjectStreams: false }));
+    expect(text).toBe("Suffix Trie\nBuild a trie\nSymbol u");
+  });
+
+  it("keeps a narrow real gap between font runs as a word break", async () => {
+    const doc = await PDFDocument.create();
+    const sans = await doc.embedFont(StandardFonts.Helvetica);
+    const bold = await doc.embedFont(StandardFonts.HelveticaBold);
+    const page = doc.addPage([720, 405]);
+    page.drawText("of", { x: 40, y: 300, size: 20, font: sans });
+    page.drawText("a", { x: 40 + sans.widthOfTextAtSize("of", 20) + 1.5, y: 300, size: 20, font: bold });
+    const [text] = await extractPdf(await doc.save());
+    expect(text).toBe("of a");
   });
 
   it("extracts PPTX slide text and speaker notes in slide order", async () => {

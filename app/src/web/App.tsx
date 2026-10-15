@@ -1,11 +1,16 @@
 import { useCallback, useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { api, type Status } from "./api.ts";
 import { SettingsDialog } from "./components/SettingsDialog.tsx";
 import { ShellContext } from "./components/TopBar.tsx";
 import { ConceptsPage } from "./pages/ConceptsPage.tsx";
 import { HomePage } from "./pages/HomePage.tsx";
 import { LessonPage } from "./pages/LessonPage.tsx";
+import { PracticeProblemPage } from "./pages/PracticeProblemPage.tsx";
+import { PracticeSetPage } from "./pages/PracticeSetPage.tsx";
 import { ReviewPage } from "./pages/ReviewPage.tsx";
+import { relayFollowUpEvent, relayJobEvent, relayLessonEvent } from "./liveJobs.ts";
+import { relayPracticeEvent } from "./practiceLive.ts";
 
 type Theme = "light" | "dark" | "system";
 
@@ -48,6 +53,10 @@ export function App() {
       try {
         const ev = JSON.parse(m.data);
         if (ev.type === "provider" || (ev.type === "job" && ev.status === "failed")) refresh();
+        if (ev.type === "practice") relayPracticeEvent(ev);
+        if (ev.type === "job") relayJobEvent(ev);
+        if (ev.type === "lesson") relayLessonEvent(ev);
+        if (ev.type === "followup") relayFollowUpEvent(ev);
       } catch {
         // ignore
       }
@@ -74,7 +83,21 @@ export function App() {
   }, []);
 
   const lesson = /^#\/lesson\/([\w-]+)/.exec(hash)?.[1];
-  const page = lesson ? <LessonPage key={lesson} lessonId={lesson} /> : hash.startsWith("#/review") ? <ReviewPage /> : hash.startsWith("#/concepts") ? <ConceptsPage /> : <HomePage />;
+  // #/practice/:setId lists a set's problems; #/practice/:setId/:problemId works one problem.
+  const [, practiceSet, practiceProblem] = /^#\/practice\/([\w-]+)(?:\/([\w-]+))?/.exec(hash) ?? [];
+  const page = lesson ? (
+    <LessonPage key={lesson} lessonId={lesson} />
+  ) : practiceProblem ? (
+    <PracticeProblemPage key={practiceProblem} setId={practiceSet} problemId={practiceProblem} />
+  ) : practiceSet ? (
+    <PracticeSetPage key={practiceSet} setId={practiceSet} />
+  ) : hash.startsWith("#/review") ? (
+    <ReviewPage />
+  ) : hash.startsWith("#/concepts") ? (
+    <ConceptsPage />
+  ) : (
+    <HomePage />
+  );
 
   return (
     <ShellContext.Provider
@@ -88,10 +111,12 @@ export function App() {
     >
       {page}
       {settings && <SettingsDialog status={status} onClose={() => setSettings(false)} refresh={refresh} />}
-      {toastMsg && (
-        <div className="toast" role="status">
-          {toastMsg}
-        </div>
+      {/* Outside #root so it is still announced while a modal makes #root inert. The live region stays mounted. */}
+      {createPortal(
+        <div className="toast-region" role="status">
+          {toastMsg && <div className="toast">{toastMsg}</div>}
+        </div>,
+        document.body,
       )}
     </ShellContext.Provider>
   );

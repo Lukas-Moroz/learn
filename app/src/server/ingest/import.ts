@@ -22,8 +22,29 @@ export function sha256(data: Uint8Array): string {
   return createHash("sha256").update(data).digest("hex");
 }
 
+// 2026-09-03, 20260903, 09-03-2026, 09032026 (US order).
+const DATE = /(?<!\d)(?:(20\d\d)[-_.]?(0[1-9]|1[0-2])[-_.]?([0-3]\d)|(0[1-9]|1[0-2])[-_.]?([0-3]\d)[-_.]?(20\d\d))(?!\d)/;
+
+/**
+ * Filename without extension or underscores. A numbered lecture is tidied:
+ * "ICS691G_Lec10_09292026_Annotated" → "Lecture 10", "… Lecture 5 09082026 Part 1 Annotated" →
+ * "Lecture 5 Part 1". The source keeps the original filename.
+ */
 export function titleFromFilename(filename: string): string {
-  return basename(filename, extname(filename)).replace(/[_]+/g, " ").replace(/\s+/g, " ").trim();
+  const name = basename(filename, extname(filename)).replace(/[_]+/g, " ").replace(/\s+/g, " ").trim();
+  const lec = /(?<![a-z])lec(?:t|ture)?\s*(?=\d)/i.exec(name);
+  if (!lec) return name;
+  const prefix = name.slice(0, lec.index);
+  const tidy = (/^(?:[A-Z0-9]{2,8} )*$/.test(prefix) ? "" : prefix) + "Lecture " + name.slice(lec.index + lec[0].length);
+  return (
+    tidy
+      .replace(new RegExp(DATE.source, "g"), "")
+      .replace(/(?<![a-z])annotated(?![a-z])/gi, "")
+      .replace(/\(\s*\)|\[\s*\]/g, "")
+      .replace(/\s+/g, " ")
+      .replace(/[\s,–—-]+$/, "")
+      .trim() || name
+  );
 }
 
 export async function importFile(
@@ -76,16 +97,28 @@ export async function importFile(
 
 /**
  * Natural lecture order from filenames: "Lecture 2" < "Lecture 10", "L03" < "L4",
- * "week1-…" < "week2-…". Falls back to dates in names, then alphabetical.
+ * "week1-…" < "week2-…", "Lecture 5 … Part 1" < "Lecture 5 … Part 2". Falls back to
+ * dates in names, then natural name order ("Exam1 …" < "Exam 2 …").
  */
 export function lectureSortKey(filename: string): (number | string)[] {
   const name = basename(filename, extname(filename)).toLowerCase();
-  const date = /(20\d\d)[-_.](\d\d)[-_.](\d\d)/.exec(name);
-  const lect = /(?:lecture|lec|lect|l|week|wk|w|session|class|chapter|ch|unit|part|topic)[\s_-]*0*(\d+)(?:[._-](\d+))?/.exec(name);
+  // Not inside a word ("Fall2026" is no "l2026"); a sub-number is short (an 8-digit date is not one).
+  const lect = /(?<![a-z])(?:lecture|lec|lect|l|week|wk|w|session|class|chapter|ch|unit|part|topic)[\s_-]*0*(\d+)(?:[._-](\d{1,3})(?!\d))?/.exec(name);
+  const part = lect && /(?<![a-z])part[\s_-]*0*(\d+)/.exec(name.slice(lect.index + lect[0].length));
+  const date = DATE.exec(name);
   const lead = /^0*(\d+)/.exec(name);
-  const primary = lect ? Number(lect[1]) : lead ? Number(lead[1]) : date ? Number(date[1] + date[2] + date[3]) : Number.MAX_SAFE_INTEGER;
-  const secondary = lect?.[2] ? Number(lect[2]) : 0;
-  return [primary, secondary, name];
+  const primary = lect
+    ? Number(lect[1])
+    : date
+      ? Number(date[1] ? date[1] + date[2] + date[3] : date[6] + date[4] + date[5])
+      : lead
+        ? Number(lead[1])
+        : Number.MAX_SAFE_INTEGER;
+  const natural = name
+    .replace(/[\s_.-]+/g, " ")
+    .replace(/(?<=[a-z])(?=\d)|(?<=\d)(?=[a-z])/g, " ")
+    .replace(/\d+/g, (d) => d.padStart(12, "0"));
+  return [primary, lect?.[2] ? Number(lect[2]) : 0, part ? Number(part[1]) : 0, natural];
 }
 
 export function orderLectureFiles(files: string[]): string[] {

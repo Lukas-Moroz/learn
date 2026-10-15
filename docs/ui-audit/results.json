@@ -1,0 +1,1128 @@
+{
+  "config": {
+    "argv": [
+      "/Users/achu9972/.nvm/versions/node/v24.21.0/bin/node",
+      "/private/tmp/learn-ui-audit-tools/node_modules/@playwright/test/cli.js",
+      "test",
+      "--config",
+      "docs/ui-audit/playwright.config.mjs"
+    ],
+    "configFile": "/Users/achu9972/Documents/GitHub/learn/docs/ui-audit/playwright.config.mjs",
+    "rootDir": "/Users/achu9972/Documents/GitHub/learn/docs/ui-audit",
+    "failOnFlakyTests": false,
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "/Users/achu9972/Documents/GitHub/learn/docs/ui-audit/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "",
+        "name": "",
+        "testDir": "/Users/achu9972/Documents/GitHub/learn/docs/ui-audit",
+        "testIgnore": [],
+        "testMatch": [
+          "ui.spec.mjs"
+        ],
+        "timeout": 45000
+      }
+    ],
+    "filteredProjects": [
+      {
+        "grep": {},
+        "grepInvert": null,
+        "outputDir": "/Users/achu9972/Documents/GitHub/learn/docs/ui-audit/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "name": "",
+        "testDir": "/Users/achu9972/Documents/GitHub/learn/docs/ui-audit",
+        "snapshotDir": "/Users/achu9972/Documents/GitHub/learn/docs/ui-audit",
+        "testIgnore": [],
+        "testMatch": "ui.spec.mjs",
+        "timeout": 45000,
+        "use": {
+          "baseURL": "http://127.0.0.1:4329",
+          "channel": "chrome",
+          "headless": true,
+          "viewport": {
+            "width": 1440,
+            "height": 1000
+          },
+          "timezoneId": "Pacific/Honolulu",
+          "colorScheme": "light",
+          "screenshot": "only-on-failure",
+          "trace": "retain-on-failure"
+        },
+        "dependencies": [],
+        "ignoreSnapshots": false,
+        "__projectId": ""
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "list",
+        null
+      ],
+      [
+        "json",
+        {
+          "outputFile": "/Users/achu9972/Documents/GitHub/learn/docs/ui-audit/results.json"
+        }
+      ],
+      [
+        "html",
+        {
+          "outputFolder": "/Users/achu9972/Documents/GitHub/learn/docs/ui-audit/playwright-report",
+          "open": "never"
+        }
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "default",
+    "updateSourceMethod": "patch",
+    "version": "1.64.0",
+    "workers": 1,
+    "webServer": {
+      "command": "node --import tsx ../docs/ui-audit/server.ts",
+      "cwd": "/Users/achu9972/Documents/GitHub/learn/app",
+      "url": "http://127.0.0.1:4329/api/status",
+      "reuseExistingServer": false,
+      "timeout": 30000
+    }
+  },
+  "suites": [
+    {
+      "title": "ui.spec.mjs",
+      "file": "ui.spec.mjs",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "01 desktop and phone visual inspection captures",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 45000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1354,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-08T19:47:53.731Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "3c8ab3ee350f564cbc79-0f0dd90d650f340b51b8",
+          "file": "ui.spec.mjs",
+          "line": 59,
+          "column": 1
+        },
+        {
+          "title": "02 create course, upload PDF, start source lesson, render and navigate PDF",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 45000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3263,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-08T19:47:56.026Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "3c8ab3ee350f564cbc79-6c7c382d40220b63f410",
+          "file": "ui.spec.mjs",
+          "line": 73,
+          "column": 1
+        },
+        {
+          "title": "03 objective entry starts a lesson",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 45000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1079,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-08T19:47:59.297Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "3c8ab3ee350f564cbc79-4a97aa87d7517a3b5591",
+          "file": "ui.spec.mjs",
+          "line": 116,
+          "column": 1
+        },
+        {
+          "title": "04 answer draft and reasoning survive refresh",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 45000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1231,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-08T19:48:00.384Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "3c8ab3ee350f564cbc79-e90e8c4290b51e15fb1e",
+          "file": "ui.spec.mjs",
+          "line": 124,
+          "column": 1
+        },
+        {
+          "title": "05 I do not know leads to a new explanation and question",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 45000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1555,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-08T19:48:01.630Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "3c8ab3ee350f564cbc79-b6893bcac2042fd2669c",
+          "file": "ui.spec.mjs",
+          "line": 136,
+          "column": 1
+        },
+        {
+          "title": "06 selected answer exposes a meaningful accessible name",
+          "ok": false,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 45000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 6062,
+                  "error": {
+                    "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoHaveAccessibleName\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('radio').first()\nExpected pattern: \u001b[32m/\\S/\u001b[39m\nReceived string:  \u001b[31m\"\"\u001b[39m\nTimeout: 5000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveAccessibleName\" getByRole('radio').first() with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('radio').first()\u001b[22m\n\u001b[2m    14 × locator resolved to <button role=\"radio\" type=\"button\" class=\"option\" aria-checked=\"false\">…</button>\u001b[22m\n\u001b[2m       - unexpected value \"\"\u001b[22m\n",
+                    "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoHaveAccessibleName\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('radio').first()\nExpected pattern: \u001b[32m/\\S/\u001b[39m\nReceived string:  \u001b[31m\"\"\u001b[39m\nTimeout: 5000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveAccessibleName\" getByRole('radio').first() with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('radio').first()\u001b[22m\n\u001b[2m    14 × locator resolved to <button role=\"radio\" type=\"button\" class=\"option\" aria-checked=\"false\">…</button>\u001b[22m\n\u001b[2m       - unexpected value \"\"\u001b[22m\n\n    at /Users/achu9972/Documents/GitHub/learn/docs/ui-audit/ui.spec.mjs:149:49",
+                    "location": {
+                      "file": "/Users/achu9972/Documents/GitHub/learn/docs/ui-audit/ui.spec.mjs",
+                      "column": 49,
+                      "line": 149
+                    },
+                    "snippet": "  147 | test('06 selected answer exposes a meaningful accessible name', async ({ page, request }) => {\n  148 |   await mathOnlyQuestion(page, request);\n> 149 |   await expect(page.getByRole('radio').first()).toHaveAccessibleName(/\\S/);\n      |                                                 ^\n  150 | });\n  151 |\n  152 | test('07 lesson has no serious or critical axe violations', async ({ page, request }) => {"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "/Users/achu9972/Documents/GitHub/learn/docs/ui-audit/ui.spec.mjs",
+                        "column": 49,
+                        "line": 149
+                      },
+                      "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoHaveAccessibleName\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('radio').first()\nExpected pattern: \u001b[32m/\\S/\u001b[39m\nReceived string:  \u001b[31m\"\"\u001b[39m\nTimeout: 5000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveAccessibleName\" getByRole('radio').first() with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('radio').first()\u001b[22m\n\u001b[2m    14 × locator resolved to <button role=\"radio\" type=\"button\" class=\"option\" aria-checked=\"false\">…</button>\u001b[22m\n\u001b[2m       - unexpected value \"\"\u001b[22m\n\n\n  147 | test('06 selected answer exposes a meaningful accessible name', async ({ page, request }) => {\n  148 |   await mathOnlyQuestion(page, request);\n> 149 |   await expect(page.getByRole('radio').first()).toHaveAccessibleName(/\\S/);\n      |                                                 ^\n  150 | });\n  151 |\n  152 | test('07 lesson has no serious or critical axe violations', async ({ page, request }) => {\n    at /Users/achu9972/Documents/GitHub/learn/docs/ui-audit/ui.spec.mjs:149:49"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-08T19:48:03.193Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "/Users/achu9972/Documents/GitHub/learn/docs/ui-audit/test-results/ui-06-selected-answer-exposes-a-meaningful-accessible-name/test-failed-1.png"
+                    },
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "/Users/achu9972/Documents/GitHub/learn/docs/ui-audit/test-results/ui-06-selected-answer-exposes-a-meaningful-accessible-name/error-context.md"
+                    },
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "/Users/achu9972/Documents/GitHub/learn/docs/ui-audit/test-results/ui-06-selected-answer-exposes-a-meaningful-accessible-name/trace.zip"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "/Users/achu9972/Documents/GitHub/learn/docs/ui-audit/ui.spec.mjs",
+                    "column": 49,
+                    "line": 149
+                  }
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "3c8ab3ee350f564cbc79-a07f340daaea7b8ad7c8",
+          "file": "ui.spec.mjs",
+          "line": 147,
+          "column": 1
+        },
+        {
+          "title": "07 lesson has no serious or critical axe violations",
+          "ok": false,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 45000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 1758,
+                  "error": {
+                    "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n\u001b[32m- Expected  -  1\u001b[39m\n\u001b[31m+ Received  + 10\u001b[39m\n\n\u001b[32m- Array []\u001b[39m\n\u001b[31m+ Array [\u001b[39m\n\u001b[31m+   Object {\u001b[39m\n\u001b[31m+     \"count\": 1,\u001b[39m\n\u001b[31m+     \"id\": \"aria-progressbar-name\",\u001b[39m\n\u001b[31m+   },\u001b[39m\n\u001b[31m+   Object {\u001b[39m\n\u001b[31m+     \"count\": 4,\u001b[39m\n\u001b[31m+     \"id\": \"button-name\",\u001b[39m\n\u001b[31m+   },\u001b[39m\n\u001b[31m+ ]\u001b[39m",
+                    "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n\u001b[32m- Expected  -  1\u001b[39m\n\u001b[31m+ Received  + 10\u001b[39m\n\n\u001b[32m- Array []\u001b[39m\n\u001b[31m+ Array [\u001b[39m\n\u001b[31m+   Object {\u001b[39m\n\u001b[31m+     \"count\": 1,\u001b[39m\n\u001b[31m+     \"id\": \"aria-progressbar-name\",\u001b[39m\n\u001b[31m+   },\u001b[39m\n\u001b[31m+   Object {\u001b[39m\n\u001b[31m+     \"count\": 4,\u001b[39m\n\u001b[31m+     \"id\": \"button-name\",\u001b[39m\n\u001b[31m+   },\u001b[39m\n\u001b[31m+ ]\u001b[39m\n    at /Users/achu9972/Documents/GitHub/learn/docs/ui-audit/ui.spec.mjs:156:133",
+                    "location": {
+                      "file": "/Users/achu9972/Documents/GitHub/learn/docs/ui-audit/ui.spec.mjs",
+                      "column": 133,
+                      "line": 156
+                    },
+                    "snippet": "  154 |   const result = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze();\n  155 |   await fs.writeFile(path.join(here, 'accessibility.json'), JSON.stringify(result.violations, null, 2));\n> 156 |   expect(result.violations.filter(v => ['serious', 'critical'].includes(v.impact)).map(v => ({ id: v.id, count: v.nodes.length }))).toEqual([]);\n      |                                                                                                                                     ^\n  157 | });\n  158 |\n  159 | test('08 Settings traps focus and restores it on Escape', async ({ page }) => {"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "/Users/achu9972/Documents/GitHub/learn/docs/ui-audit/ui.spec.mjs",
+                        "column": 133,
+                        "line": 156
+                      },
+                      "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n\u001b[32m- Expected  -  1\u001b[39m\n\u001b[31m+ Received  + 10\u001b[39m\n\n\u001b[32m- Array []\u001b[39m\n\u001b[31m+ Array [\u001b[39m\n\u001b[31m+   Object {\u001b[39m\n\u001b[31m+     \"count\": 1,\u001b[39m\n\u001b[31m+     \"id\": \"aria-progressbar-name\",\u001b[39m\n\u001b[31m+   },\u001b[39m\n\u001b[31m+   Object {\u001b[39m\n\u001b[31m+     \"count\": 4,\u001b[39m\n\u001b[31m+     \"id\": \"button-name\",\u001b[39m\n\u001b[31m+   },\u001b[39m\n\u001b[31m+ ]\u001b[39m\n\n  154 |   const result = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze();\n  155 |   await fs.writeFile(path.join(here, 'accessibility.json'), JSON.stringify(result.violations, null, 2));\n> 156 |   expect(result.violations.filter(v => ['serious', 'critical'].includes(v.impact)).map(v => ({ id: v.id, count: v.nodes.length }))).toEqual([]);\n      |                                                                                                                                     ^\n  157 | });\n  158 |\n  159 | test('08 Settings traps focus and restores it on Escape', async ({ page }) => {\n    at /Users/achu9972/Documents/GitHub/learn/docs/ui-audit/ui.spec.mjs:156:133"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-08T19:48:09.825Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "/Users/achu9972/Documents/GitHub/learn/docs/ui-audit/test-results/ui-07-lesson-has-no-serious-or-critical-axe-violations/test-failed-1.png"
+                    },
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "/Users/achu9972/Documents/GitHub/learn/docs/ui-audit/test-results/ui-07-lesson-has-no-serious-or-critical-axe-violations/error-context.md"
+                    },
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "/Users/achu9972/Documents/GitHub/learn/docs/ui-audit/test-results/ui-07-lesson-has-no-serious-or-critical-axe-violations/trace.zip"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "/Users/achu9972/Documents/GitHub/learn/docs/ui-audit/ui.spec.mjs",
+                    "column": 133,
+                    "line": 156
+                  }
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "3c8ab3ee350f564cbc79-4eba89c8b1b9d983e7fb",
+          "file": "ui.spec.mjs",
+          "line": 152,
+          "column": 1
+        },
+        {
+          "title": "08 Settings traps focus and restores it on Escape",
+          "ok": false,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 45000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 11103,
+                  "error": {
+                    "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoHaveAttribute\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator:  getByRole('dialog', { name: 'AI providers' })\nExpected: \u001b[32m\"true\"\u001b[39m\nReceived: \u001b[31m\"\"\u001b[39m\nTimeout:  5000ms\n\nCall log:\n\u001b[2m  - Expect \"soft toHaveAttribute\" getByRole('dialog', { name: 'AI providers' }) with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('dialog', { name: 'AI providers' })\u001b[22m\n\u001b[2m    14 × locator resolved to <div role=\"dialog\" class=\"dialog\" aria-label=\"AI providers\">…</div>\u001b[22m\n\u001b[2m       - unexpected value \"null\"\u001b[22m\n",
+                    "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoHaveAttribute\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator:  getByRole('dialog', { name: 'AI providers' })\nExpected: \u001b[32m\"true\"\u001b[39m\nReceived: \u001b[31m\"\"\u001b[39m\nTimeout:  5000ms\n\nCall log:\n\u001b[2m  - Expect \"soft toHaveAttribute\" getByRole('dialog', { name: 'AI providers' }) with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('dialog', { name: 'AI providers' })\u001b[22m\n\u001b[2m    14 × locator resolved to <div role=\"dialog\" class=\"dialog\" aria-label=\"AI providers\">…</div>\u001b[22m\n\u001b[2m       - unexpected value \"null\"\u001b[22m\n\n    at /Users/achu9972/Documents/GitHub/learn/docs/ui-audit/ui.spec.mjs:164:29",
+                    "location": {
+                      "file": "/Users/achu9972/Documents/GitHub/learn/docs/ui-audit/ui.spec.mjs",
+                      "column": 29,
+                      "line": 164
+                    },
+                    "snippet": "  162 |   const dialog = page.getByRole('dialog', { name: 'AI providers' });\n  163 |   await expect(page.getByRole('button', { name: 'Close settings' })).toBeFocused();\n> 164 |   await expect.soft(dialog).toHaveAttribute('aria-modal', 'true');\n      |                             ^\n  165 |   let escaped = false;\n  166 |   for (let i = 0; i < 15; i++) {\n  167 |     await page.keyboard.press('Tab');"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "/Users/achu9972/Documents/GitHub/learn/docs/ui-audit/ui.spec.mjs",
+                        "column": 29,
+                        "line": 164
+                      },
+                      "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoHaveAttribute\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator:  getByRole('dialog', { name: 'AI providers' })\nExpected: \u001b[32m\"true\"\u001b[39m\nReceived: \u001b[31m\"\"\u001b[39m\nTimeout:  5000ms\n\nCall log:\n\u001b[2m  - Expect \"soft toHaveAttribute\" getByRole('dialog', { name: 'AI providers' }) with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('dialog', { name: 'AI providers' })\u001b[22m\n\u001b[2m    14 × locator resolved to <div role=\"dialog\" class=\"dialog\" aria-label=\"AI providers\">…</div>\u001b[22m\n\u001b[2m       - unexpected value \"null\"\u001b[22m\n\n\n  162 |   const dialog = page.getByRole('dialog', { name: 'AI providers' });\n  163 |   await expect(page.getByRole('button', { name: 'Close settings' })).toBeFocused();\n> 164 |   await expect.soft(dialog).toHaveAttribute('aria-modal', 'true');\n      |                             ^\n  165 |   let escaped = false;\n  166 |   for (let i = 0; i < 15; i++) {\n  167 |     await page.keyboard.press('Tab');\n    at /Users/achu9972/Documents/GitHub/learn/docs/ui-audit/ui.spec.mjs:164:29"
+                    },
+                    {
+                      "location": {
+                        "file": "/Users/achu9972/Documents/GitHub/learn/docs/ui-audit/ui.spec.mjs",
+                        "column": 64,
+                        "line": 170
+                      },
+                      "message": "Error: Tab must remain inside an open modal\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32mfalse\u001b[39m\nReceived: \u001b[31mtrue\u001b[39m\n\n  168 |     if (!await page.evaluate(() => !!document.activeElement.closest('[role=dialog]'))) { escaped = true; break; }\n  169 |   }\n> 170 |   expect.soft(escaped, 'Tab must remain inside an open modal').toBe(false);\n      |                                                                ^\n  171 |   await page.keyboard.press('Escape');\n  172 |   await expect.soft(page.getByRole('button', { name: 'Settings', exact: true })).toBeFocused();\n  173 | });\n    at /Users/achu9972/Documents/GitHub/learn/docs/ui-audit/ui.spec.mjs:170:64"
+                    },
+                    {
+                      "location": {
+                        "file": "/Users/achu9972/Documents/GitHub/learn/docs/ui-audit/ui.spec.mjs",
+                        "column": 82,
+                        "line": 172
+                      },
+                      "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeFocused\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator:  getByRole('button', { name: 'Settings', exact: true })\nExpected: focused\nReceived: inactive\nTimeout:  5000ms\n\nCall log:\n\u001b[2m  - Expect \"soft toBeFocused\" getByRole('button', { name: 'Settings', exact: true }) with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('button', { name: 'Settings', exact: true })\u001b[22m\n\u001b[2m    14 × locator resolved to <button aria-label=\"Settings\" class=\"btn ghost small\">⚙</button>\u001b[22m\n\u001b[2m       - unexpected value \"inactive\"\u001b[22m\n\n\n  170 |   expect.soft(escaped, 'Tab must remain inside an open modal').toBe(false);\n  171 |   await page.keyboard.press('Escape');\n> 172 |   await expect.soft(page.getByRole('button', { name: 'Settings', exact: true })).toBeFocused();\n      |                                                                                  ^\n  173 | });\n  174 |\n  175 | test('09 newly generated question is brought into the viewport', async ({ page, request }) => {\n    at /Users/achu9972/Documents/GitHub/learn/docs/ui-audit/ui.spec.mjs:172:82"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-08T19:48:12.509Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "/Users/achu9972/Documents/GitHub/learn/docs/ui-audit/test-results/ui-08-Settings-traps-focus-and-restores-it-on-Escape/test-failed-1.png"
+                    },
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "/Users/achu9972/Documents/GitHub/learn/docs/ui-audit/test-results/ui-08-Settings-traps-focus-and-restores-it-on-Escape/error-context.md"
+                    },
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "/Users/achu9972/Documents/GitHub/learn/docs/ui-audit/test-results/ui-08-Settings-traps-focus-and-restores-it-on-Escape/trace.zip"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "/Users/achu9972/Documents/GitHub/learn/docs/ui-audit/ui.spec.mjs",
+                    "column": 29,
+                    "line": 164
+                  }
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "3c8ab3ee350f564cbc79-81f226bb17c9292c1694",
+          "file": "ui.spec.mjs",
+          "line": 159,
+          "column": 1
+        },
+        {
+          "title": "09 newly generated question is brought into the viewport",
+          "ok": false,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 45000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 3,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 6776,
+                  "error": {
+                    "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeInViewport\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator:  locator('.question').last()\nExpected: in viewport\nReceived: viewport ratio 0\nTimeout:  5000ms\n\nCall log:\n\u001b[2m  - Expect \"toBeInViewport\" locator('.question').last() with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('.question').last()\u001b[22m\n\u001b[2m    14 × locator resolved to <div tabindex=\"-1\" class=\"question\" aria-label=\"Question\">…</div>\u001b[22m\n\u001b[2m       - unexpected value \"viewport ratio 0\"\u001b[22m\n",
+                    "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeInViewport\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator:  locator('.question').last()\nExpected: in viewport\nReceived: viewport ratio 0\nTimeout:  5000ms\n\nCall log:\n\u001b[2m  - Expect \"toBeInViewport\" locator('.question').last() with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('.question').last()\u001b[22m\n\u001b[2m    14 × locator resolved to <div tabindex=\"-1\" class=\"question\" aria-label=\"Question\">…</div>\u001b[22m\n\u001b[2m       - unexpected value \"viewport ratio 0\"\u001b[22m\n\n    at /Users/achu9972/Documents/GitHub/learn/docs/ui-audit/ui.spec.mjs:182:50",
+                    "location": {
+                      "file": "/Users/achu9972/Documents/GitHub/learn/docs/ui-audit/ui.spec.mjs",
+                      "column": 50,
+                      "line": 182
+                    },
+                    "snippet": "  180 |   await expect(page.getByRole('button', { name: 'Submit', exact: true })).toBeVisible();\n  181 |   await capture(page, 'new-question-viewport', false);\n> 182 |   await expect(page.locator('.question').last()).toBeInViewport();\n      |                                                  ^\n  183 | });\n  184 |\n  185 | test('10 Enter on confidence selects confidence without submitting', async ({ page, request }) => {"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "/Users/achu9972/Documents/GitHub/learn/docs/ui-audit/ui.spec.mjs",
+                        "column": 50,
+                        "line": 182
+                      },
+                      "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeInViewport\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator:  locator('.question').last()\nExpected: in viewport\nReceived: viewport ratio 0\nTimeout:  5000ms\n\nCall log:\n\u001b[2m  - Expect \"toBeInViewport\" locator('.question').last() with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('.question').last()\u001b[22m\n\u001b[2m    14 × locator resolved to <div tabindex=\"-1\" class=\"question\" aria-label=\"Question\">…</div>\u001b[22m\n\u001b[2m       - unexpected value \"viewport ratio 0\"\u001b[22m\n\n\n  180 |   await expect(page.getByRole('button', { name: 'Submit', exact: true })).toBeVisible();\n  181 |   await capture(page, 'new-question-viewport', false);\n> 182 |   await expect(page.locator('.question').last()).toBeInViewport();\n      |                                                  ^\n  183 | });\n  184 |\n  185 | test('10 Enter on confidence selects confidence without submitting', async ({ page, request }) => {\n    at /Users/achu9972/Documents/GitHub/learn/docs/ui-audit/ui.spec.mjs:182:50"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-08T19:48:24.603Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "/Users/achu9972/Documents/GitHub/learn/docs/ui-audit/test-results/ui-09-newly-generated-question-is-brought-into-the-viewport/test-failed-1.png"
+                    },
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "/Users/achu9972/Documents/GitHub/learn/docs/ui-audit/test-results/ui-09-newly-generated-question-is-brought-into-the-viewport/error-context.md"
+                    },
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "/Users/achu9972/Documents/GitHub/learn/docs/ui-audit/test-results/ui-09-newly-generated-question-is-brought-into-the-viewport/trace.zip"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "/Users/achu9972/Documents/GitHub/learn/docs/ui-audit/ui.spec.mjs",
+                    "column": 50,
+                    "line": 182
+                  }
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "3c8ab3ee350f564cbc79-0f42cc783f7b91af3138",
+          "file": "ui.spec.mjs",
+          "line": 175,
+          "column": 1
+        },
+        {
+          "title": "10 Enter on confidence selects confidence without submitting",
+          "ok": false,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 45000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 4,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 6313,
+                  "error": {
+                    "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoHaveAttribute\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator:  getByRole('button', { name: 'Sure', exact: true })\nExpected: \u001b[32m\"\u001b[7mtru\u001b[27me\"\u001b[39m\nReceived: \u001b[31m\"\u001b[7mfals\u001b[27me\"\u001b[39m\nTimeout:  5000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveAttribute\" getByRole('button', { name: 'Sure', exact: true }) with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('button', { name: 'Sure', exact: true })\u001b[22m\n\u001b[2m    14 × locator resolved to <button type=\"button\" aria-pressed=\"false\">Sure</button>\u001b[22m\n\u001b[2m       - unexpected value \"false\"\u001b[22m\n",
+                    "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoHaveAttribute\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator:  getByRole('button', { name: 'Sure', exact: true })\nExpected: \u001b[32m\"\u001b[7mtru\u001b[27me\"\u001b[39m\nReceived: \u001b[31m\"\u001b[7mfals\u001b[27me\"\u001b[39m\nTimeout:  5000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveAttribute\" getByRole('button', { name: 'Sure', exact: true }) with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('button', { name: 'Sure', exact: true })\u001b[22m\n\u001b[2m    14 × locator resolved to <button type=\"button\" aria-pressed=\"false\">Sure</button>\u001b[22m\n\u001b[2m       - unexpected value \"false\"\u001b[22m\n\n    at /Users/achu9972/Documents/GitHub/learn/docs/ui-audit/ui.spec.mjs:190:73",
+                    "location": {
+                      "file": "/Users/achu9972/Documents/GitHub/learn/docs/ui-audit/ui.spec.mjs",
+                      "column": 73,
+                      "line": 190
+                    },
+                    "snippet": "  188 |   await page.getByRole('button', { name: 'Sure', exact: true }).focus();\n  189 |   await page.keyboard.press('Enter');\n> 190 |   await expect(page.getByRole('button', { name: 'Sure', exact: true })).toHaveAttribute('aria-pressed', 'true');\n      |                                                                         ^\n  191 |   await expect(page.getByRole('button', { name: 'Submit', exact: true })).toBeEnabled();\n  192 |   await expect(page.locator('.feedback')).toHaveCount(0);\n  193 | });"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "/Users/achu9972/Documents/GitHub/learn/docs/ui-audit/ui.spec.mjs",
+                        "column": 73,
+                        "line": 190
+                      },
+                      "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoHaveAttribute\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator:  getByRole('button', { name: 'Sure', exact: true })\nExpected: \u001b[32m\"\u001b[7mtru\u001b[27me\"\u001b[39m\nReceived: \u001b[31m\"\u001b[7mfals\u001b[27me\"\u001b[39m\nTimeout:  5000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveAttribute\" getByRole('button', { name: 'Sure', exact: true }) with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('button', { name: 'Sure', exact: true })\u001b[22m\n\u001b[2m    14 × locator resolved to <button type=\"button\" aria-pressed=\"false\">Sure</button>\u001b[22m\n\u001b[2m       - unexpected value \"false\"\u001b[22m\n\n\n  188 |   await page.getByRole('button', { name: 'Sure', exact: true }).focus();\n  189 |   await page.keyboard.press('Enter');\n> 190 |   await expect(page.getByRole('button', { name: 'Sure', exact: true })).toHaveAttribute('aria-pressed', 'true');\n      |                                                                         ^\n  191 |   await expect(page.getByRole('button', { name: 'Submit', exact: true })).toBeEnabled();\n  192 |   await expect(page.locator('.feedback')).toHaveCount(0);\n  193 | });\n    at /Users/achu9972/Documents/GitHub/learn/docs/ui-audit/ui.spec.mjs:190:73"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-08T19:48:32.393Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "/Users/achu9972/Documents/GitHub/learn/docs/ui-audit/test-results/ui-10-Enter-on-confidence--84b25-nfidence-without-submitting/test-failed-1.png"
+                    },
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "/Users/achu9972/Documents/GitHub/learn/docs/ui-audit/test-results/ui-10-Enter-on-confidence--84b25-nfidence-without-submitting/error-context.md"
+                    },
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "/Users/achu9972/Documents/GitHub/learn/docs/ui-audit/test-results/ui-10-Enter-on-confidence--84b25-nfidence-without-submitting/trace.zip"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "/Users/achu9972/Documents/GitHub/learn/docs/ui-audit/ui.spec.mjs",
+                    "column": 73,
+                    "line": 190
+                  }
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "3c8ab3ee350f564cbc79-2f00424419715cc8ab61",
+          "file": "ui.spec.mjs",
+          "line": 185,
+          "column": 1
+        },
+        {
+          "title": "11 mobile home fits 390 and 320 pixel viewports",
+          "ok": false,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 45000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 5,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 895,
+                  "error": {
+                    "message": "Error: Home must fit width 320\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeLessThanOrEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\nExpected: <= \u001b[32m320\u001b[39m\nReceived:    \u001b[31m336\u001b[39m",
+                    "stack": "Error: Home must fit width 320\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeLessThanOrEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\nExpected: <= \u001b[32m320\u001b[39m\nReceived:    \u001b[31m336\u001b[39m\n    at /Users/achu9972/Documents/GitHub/learn/docs/ui-audit/ui.spec.mjs:200:62",
+                    "location": {
+                      "file": "/Users/achu9972/Documents/GitHub/learn/docs/ui-audit/ui.spec.mjs",
+                      "column": 62,
+                      "line": 200
+                    },
+                    "snippet": "  198 |     await page.setViewportSize({ width, height: 844 });\n  199 |     const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);\n> 200 |     expect.soft(scrollWidth, `Home must fit width ${width}`).toBeLessThanOrEqual(width);\n      |                                                              ^\n  201 |   }\n  202 | });\n  203 |"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "/Users/achu9972/Documents/GitHub/learn/docs/ui-audit/ui.spec.mjs",
+                        "column": 62,
+                        "line": 200
+                      },
+                      "message": "Error: Home must fit width 320\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeLessThanOrEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\nExpected: <= \u001b[32m320\u001b[39m\nReceived:    \u001b[31m336\u001b[39m\n\n  198 |     await page.setViewportSize({ width, height: 844 });\n  199 |     const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);\n> 200 |     expect.soft(scrollWidth, `Home must fit width ${width}`).toBeLessThanOrEqual(width);\n      |                                                              ^\n  201 |   }\n  202 | });\n  203 |\n    at /Users/achu9972/Documents/GitHub/learn/docs/ui-audit/ui.spec.mjs:200:62"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-08T19:48:39.632Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "/Users/achu9972/Documents/GitHub/learn/docs/ui-audit/test-results/ui-11-mobile-home-fits-390-and-320-pixel-viewports/test-failed-1.png"
+                    },
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "/Users/achu9972/Documents/GitHub/learn/docs/ui-audit/test-results/ui-11-mobile-home-fits-390-and-320-pixel-viewports/error-context.md"
+                    },
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "/Users/achu9972/Documents/GitHub/learn/docs/ui-audit/test-results/ui-11-mobile-home-fits-390-and-320-pixel-viewports/trace.zip"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "/Users/achu9972/Documents/GitHub/learn/docs/ui-audit/ui.spec.mjs",
+                    "column": 62,
+                    "line": 200
+                  }
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "3c8ab3ee350f564cbc79-b174629138d5b69bf840",
+          "file": "ui.spec.mjs",
+          "line": 195,
+          "column": 1
+        },
+        {
+          "title": "12 failed course creation displays an actionable error",
+          "ok": false,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 45000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 6,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 6045,
+                  "error": {
+                    "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByText('Could not save course. Try again.', { exact: true })\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" getByText('Could not save course. Try again.', { exact: true }) with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByText('Could not save course. Try again.', { exact: true })\u001b[22m\n",
+                    "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByText('Could not save course. Try again.', { exact: true })\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" getByText('Could not save course. Try again.', { exact: true }) with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByText('Could not save course. Try again.', { exact: true })\u001b[22m\n\n    at /Users/achu9972/Documents/GitHub/learn/docs/ui-audit/ui.spec.mjs:211:86",
+                    "location": {
+                      "file": "/Users/achu9972/Documents/GitHub/learn/docs/ui-audit/ui.spec.mjs",
+                      "column": 86,
+                      "line": 211
+                    },
+                    "snippet": "  209 |   await page.getByRole('button', { name: 'Create', exact: true }).click();\n  210 |   await capture(page, 'course-create-failure');\n> 211 |   await expect(page.getByText('Could not save course. Try again.', { exact: true })).toBeVisible();\n      |                                                                                      ^\n  212 | });\n  213 |\n  214 | test('13 failed home load offers an error and retry', async ({ page }) => {"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "/Users/achu9972/Documents/GitHub/learn/docs/ui-audit/ui.spec.mjs",
+                        "column": 86,
+                        "line": 211
+                      },
+                      "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByText('Could not save course. Try again.', { exact: true })\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" getByText('Could not save course. Try again.', { exact: true }) with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByText('Could not save course. Try again.', { exact: true })\u001b[22m\n\n\n  209 |   await page.getByRole('button', { name: 'Create', exact: true }).click();\n  210 |   await capture(page, 'course-create-failure');\n> 211 |   await expect(page.getByText('Could not save course. Try again.', { exact: true })).toBeVisible();\n      |                                                                                      ^\n  212 | });\n  213 |\n  214 | test('13 failed home load offers an error and retry', async ({ page }) => {\n    at /Users/achu9972/Documents/GitHub/learn/docs/ui-audit/ui.spec.mjs:211:86"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-08T19:48:41.415Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "/Users/achu9972/Documents/GitHub/learn/docs/ui-audit/test-results/ui-12-failed-course-creation-displays-an-actionable-error/test-failed-1.png"
+                    },
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "/Users/achu9972/Documents/GitHub/learn/docs/ui-audit/test-results/ui-12-failed-course-creation-displays-an-actionable-error/error-context.md"
+                    },
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "/Users/achu9972/Documents/GitHub/learn/docs/ui-audit/test-results/ui-12-failed-course-creation-displays-an-actionable-error/trace.zip"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "/Users/achu9972/Documents/GitHub/learn/docs/ui-audit/ui.spec.mjs",
+                    "column": 86,
+                    "line": 211
+                  }
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "3c8ab3ee350f564cbc79-7fc893be057edfc203bb",
+          "file": "ui.spec.mjs",
+          "line": 204,
+          "column": 1
+        },
+        {
+          "title": "13 failed home load offers an error and retry",
+          "ok": false,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 45000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 7,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 6125,
+                  "error": {
+                    "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('button', { name: /retry|try again/i })\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" getByRole('button', { name: /retry|try again/i }) with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('button', { name: /retry|try again/i })\u001b[22m\n",
+                    "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('button', { name: /retry|try again/i })\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" getByRole('button', { name: /retry|try again/i }) with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('button', { name: /retry|try again/i })\u001b[22m\n\n    at /Users/achu9972/Documents/GitHub/learn/docs/ui-audit/ui.spec.mjs:219:72",
+                    "location": {
+                      "file": "/Users/achu9972/Documents/GitHub/learn/docs/ui-audit/ui.spec.mjs",
+                      "column": 72,
+                      "line": 219
+                    },
+                    "snippet": "  217 |   await expect(page.getByRole('textbox', { name: 'Course title' })).toBeVisible();\n  218 |   await capture(page, 'home-load-failure');\n> 219 |   await expect(page.getByRole('button', { name: /retry|try again/i })).toBeVisible();\n      |                                                                        ^\n  220 | });\n  221 |\n  222 | test('14 failed source fetch reports an error rather than an empty page', async ({ page }) => {"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "/Users/achu9972/Documents/GitHub/learn/docs/ui-audit/ui.spec.mjs",
+                        "column": 72,
+                        "line": 219
+                      },
+                      "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('button', { name: /retry|try again/i })\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" getByRole('button', { name: /retry|try again/i }) with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('button', { name: /retry|try again/i })\u001b[22m\n\n\n  217 |   await expect(page.getByRole('textbox', { name: 'Course title' })).toBeVisible();\n  218 |   await capture(page, 'home-load-failure');\n> 219 |   await expect(page.getByRole('button', { name: /retry|try again/i })).toBeVisible();\n      |                                                                        ^\n  220 | });\n  221 |\n  222 | test('14 failed source fetch reports an error rather than an empty page', async ({ page }) => {\n    at /Users/achu9972/Documents/GitHub/learn/docs/ui-audit/ui.spec.mjs:219:72"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-08T19:48:48.387Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "/Users/achu9972/Documents/GitHub/learn/docs/ui-audit/test-results/ui-13-failed-home-load-offers-an-error-and-retry/test-failed-1.png"
+                    },
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "/Users/achu9972/Documents/GitHub/learn/docs/ui-audit/test-results/ui-13-failed-home-load-offers-an-error-and-retry/error-context.md"
+                    },
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "/Users/achu9972/Documents/GitHub/learn/docs/ui-audit/test-results/ui-13-failed-home-load-offers-an-error-and-retry/trace.zip"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "/Users/achu9972/Documents/GitHub/learn/docs/ui-audit/ui.spec.mjs",
+                    "column": 72,
+                    "line": 219
+                  }
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "3c8ab3ee350f564cbc79-4573b85c5d18ed416add",
+          "file": "ui.spec.mjs",
+          "line": 214,
+          "column": 1
+        },
+        {
+          "title": "14 failed source fetch reports an error rather than an empty page",
+          "ok": false,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 45000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 8,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 7219,
+                  "error": {
+                    "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('dialog', { name: 'Original source' }).getByText(/could not|failed|unavailable|try again/i)\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" getByRole('dialog', { name: 'Original source' }).getByText(/could not|failed|unavailable|try again/i) with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('dialog', { name: 'Original source' }).getByText(/could not|failed|unavailable|try again/i)\u001b[22m\n",
+                    "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('dialog', { name: 'Original source' }).getByText(/could not|failed|unavailable|try again/i)\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" getByRole('dialog', { name: 'Original source' }).getByText(/could not|failed|unavailable|try again/i) with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('dialog', { name: 'Original source' }).getByText(/could not|failed|unavailable|try again/i)\u001b[22m\n\n    at /Users/achu9972/Documents/GitHub/learn/docs/ui-audit/ui.spec.mjs:232:77",
+                    "location": {
+                      "file": "/Users/achu9972/Documents/GitHub/learn/docs/ui-audit/ui.spec.mjs",
+                      "column": 77,
+                      "line": 232
+                    },
+                    "snippet": "  230 |   await expect(dialog).toBeVisible();\n  231 |   await capture(page, 'source-load-failure');\n> 232 |   await expect(dialog.getByText(/could not|failed|unavailable|try again/i)).toBeVisible();\n      |                                                                             ^\n  233 | });\n  234 |\n  235 | test('15 concepts filter distinguishes no results from no studied concepts', async ({ page, request }) => {"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "/Users/achu9972/Documents/GitHub/learn/docs/ui-audit/ui.spec.mjs",
+                        "column": 77,
+                        "line": 232
+                      },
+                      "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('dialog', { name: 'Original source' }).getByText(/could not|failed|unavailable|try again/i)\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" getByRole('dialog', { name: 'Original source' }).getByText(/could not|failed|unavailable|try again/i) with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('dialog', { name: 'Original source' }).getByText(/could not|failed|unavailable|try again/i)\u001b[22m\n\n\n  230 |   await expect(dialog).toBeVisible();\n  231 |   await capture(page, 'source-load-failure');\n> 232 |   await expect(dialog.getByText(/could not|failed|unavailable|try again/i)).toBeVisible();\n      |                                                                             ^\n  233 | });\n  234 |\n  235 | test('15 concepts filter distinguishes no results from no studied concepts', async ({ page, request }) => {\n    at /Users/achu9972/Documents/GitHub/learn/docs/ui-audit/ui.spec.mjs:232:77"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-08T19:48:56.192Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "/Users/achu9972/Documents/GitHub/learn/docs/ui-audit/test-results/ui-14-failed-source-fetch--07372-r-rather-than-an-empty-page/test-failed-1.png"
+                    },
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "/Users/achu9972/Documents/GitHub/learn/docs/ui-audit/test-results/ui-14-failed-source-fetch--07372-r-rather-than-an-empty-page/error-context.md"
+                    },
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "/Users/achu9972/Documents/GitHub/learn/docs/ui-audit/test-results/ui-14-failed-source-fetch--07372-r-rather-than-an-empty-page/trace.zip"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "/Users/achu9972/Documents/GitHub/learn/docs/ui-audit/ui.spec.mjs",
+                    "column": 77,
+                    "line": 232
+                  }
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "3c8ab3ee350f564cbc79-5080fe789e328aa63d4e",
+          "file": "ui.spec.mjs",
+          "line": 222,
+          "column": 1
+        },
+        {
+          "title": "15 concepts filter distinguishes no results from no studied concepts",
+          "ok": false,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 45000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 9,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 6445,
+                  "error": {
+                    "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByText(/no (matching concepts|results|matches)/i)\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" getByText(/no (matching concepts|results|matches)/i) with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByText(/no (matching concepts|results|matches)/i)\u001b[22m\n",
+                    "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByText(/no (matching concepts|results|matches)/i)\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" getByText(/no (matching concepts|results|matches)/i) with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByText(/no (matching concepts|results|matches)/i)\u001b[22m\n\n    at /Users/achu9972/Documents/GitHub/learn/docs/ui-audit/ui.spec.mjs:241:75",
+                    "location": {
+                      "file": "/Users/achu9972/Documents/GitHub/learn/docs/ui-audit/ui.spec.mjs",
+                      "column": 75,
+                      "line": 241
+                    },
+                    "snippet": "  239 |   await capture(page, 'concepts-desktop');\n  240 |   await page.getByRole('textbox', { name: 'Filter concepts' }).fill('nonexistent-xyz');\n> 241 |   await expect(page.getByText(/no (matching concepts|results|matches)/i)).toBeVisible();\n      |                                                                           ^\n  242 | });\n  243 |\n  244 | test('16 review, concept details, progress drawer and dark theme work', async ({ page, request }) => {"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "/Users/achu9972/Documents/GitHub/learn/docs/ui-audit/ui.spec.mjs",
+                        "column": 75,
+                        "line": 241
+                      },
+                      "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByText(/no (matching concepts|results|matches)/i)\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" getByText(/no (matching concepts|results|matches)/i) with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByText(/no (matching concepts|results|matches)/i)\u001b[22m\n\n\n  239 |   await capture(page, 'concepts-desktop');\n  240 |   await page.getByRole('textbox', { name: 'Filter concepts' }).fill('nonexistent-xyz');\n> 241 |   await expect(page.getByText(/no (matching concepts|results|matches)/i)).toBeVisible();\n      |                                                                           ^\n  242 | });\n  243 |\n  244 | test('16 review, concept details, progress drawer and dark theme work', async ({ page, request }) => {\n    at /Users/achu9972/Documents/GitHub/learn/docs/ui-audit/ui.spec.mjs:241:75"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-08T19:49:04.643Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "/Users/achu9972/Documents/GitHub/learn/docs/ui-audit/test-results/ui-15-concepts-filter-dist-d185c-ts-from-no-studied-concepts/test-failed-1.png"
+                    },
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "/Users/achu9972/Documents/GitHub/learn/docs/ui-audit/test-results/ui-15-concepts-filter-dist-d185c-ts-from-no-studied-concepts/error-context.md"
+                    },
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "/Users/achu9972/Documents/GitHub/learn/docs/ui-audit/test-results/ui-15-concepts-filter-dist-d185c-ts-from-no-studied-concepts/trace.zip"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "/Users/achu9972/Documents/GitHub/learn/docs/ui-audit/ui.spec.mjs",
+                    "column": 75,
+                    "line": 241
+                  }
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "3c8ab3ee350f564cbc79-3d8f045e085280549a88",
+          "file": "ui.spec.mjs",
+          "line": 235,
+          "column": 1
+        },
+        {
+          "title": "16 review, concept details, progress drawer and dark theme work",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 45000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 10,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2708,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-08T19:49:12.155Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "3c8ab3ee350f564cbc79-957363f5c68c246ccf9b",
+          "file": "ui.spec.mjs",
+          "line": 244,
+          "column": 1
+        },
+        {
+          "title": "17 a wrong answer schedules review and stored review questions can be answered",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 45000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 10,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1526,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-08T19:49:15.298Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "3c8ab3ee350f564cbc79-0eda7466551eb352fac7",
+          "file": "ui.spec.mjs",
+          "line": 265,
+          "column": 1
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-10-08T19:47:50.918Z",
+    "duration": 86215.35,
+    "expected": 7,
+    "skipped": 0,
+    "unexpected": 10,
+    "flaky": 0
+  }
+}

@@ -23,7 +23,7 @@ const wrap = (fn: Handler) => (req: Request, res: Response, next: NextFunction) 
 
 export function createApp(ctx: AppContext) {
   const app = express();
-  const { repo, engine, router } = ctx;
+  const { repo, engine, router, practice } = ctx;
 
   // Local-only server without accounts. Two cheap guards against other websites
   // driving it: the Host must be loopback (blocks DNS rebinding), and mutating API
@@ -46,7 +46,15 @@ export function createApp(ctx: AppContext) {
   };
 
   // ── Status & providers ──
-  app.get("/api/status", wrap(async () => ({ ...(await router.statuses()), dataDir: ctx.dataDir })));
+  app.get("/api/status", wrap(async () => ({ ...(await router.statuses()), generation: { prefetch: engine.prefetch.enabled() }, dataDir: ctx.dataDir })));
+  // Generation preferences. "prefetch": prepare the next lesson step in the background (default on).
+  app.patch("/api/settings/generation", wrap((req) => {
+    if (typeof req.body.prefetch === "boolean") {
+      repo.setSetting("generation", { ...repo.getSetting<object>("generation", {}), prefetch: req.body.prefetch });
+      if (!req.body.prefetch) engine.prefetch.cancelAll();
+    }
+    return { prefetch: engine.prefetch.enabled() };
+  }));
   app.patch("/api/settings/providers", wrap((req) => router.updateSettings({
     ...(req.body.primary ? { primary: req.body.primary as ProviderId } : {}),
     ...(typeof req.body.claudeFallback === "boolean" ? { claudeFallback: req.body.claudeFallback } : {}),
@@ -57,14 +65,19 @@ export function createApp(ctx: AppContext) {
   app.post("/api/providers/openai/signin", wrap(() => {
     // Opens the system browser; completes in the background. The UI polls /api/status.
     ctx.openai.signIn().then(
-      () => (router.resume(), ctx.bus.publish({ type: "provider" })),
+      () => (router.resume(), practice.resume(), ctx.followUps.resume(), ctx.bus.publish({ type: "provider" })),
       (e) => ctx.bus.publish({ type: "provider", error: e instanceof ProviderError ? e.toJSON() : String(e) }),
     );
     return { started: true };
   }));
   app.post("/api/providers/openai/cancel", wrap(() => (ctx.openai.cancelSignIn(), { ok: true })));
   app.post("/api/providers/openai/disconnect", wrap(async () => (await ctx.openai.disconnect(), { ok: true })));
-  app.post("/api/providers/resume", wrap(() => (router.resume(), { ok: true })));
+  app.post("/api/providers/resume", wrap(() => {
+    router.resume();
+    practice.resume(); // written practice answers, warm-ups and coaching that waited for a provider
+    ctx.followUps.resume(); // follow-up questions that waited for a provider
+    return { ok: true };
+  }));
   app.post("/api/jobs/:id/cancel", wrap((req) => ({ cancelled: ctx.gen.cancel(String(req.params.id)) })));
 
   // ── Courses, lectures, sources ──
@@ -80,6 +93,7 @@ export function createApp(ctx: AppContext) {
           lesson: lesson ? { id: lesson.id, complete: lesson.state.complete, updatedAt: lesson.updated_at, pathIndex: lesson.state.pathIndex, pathLength: lesson.state.path.length } : null,
         };
       }),
+      practice: practice.summaries(c.id),
     })),
   ));
   app.post("/api/courses", wrap((req) => {
@@ -104,7 +118,11 @@ export function createApp(ctx: AppContext) {
   }));
   app.put("/api/courses/:id/lecture-order", wrap((req) => (repo.reorderLectures(String(req.params.id), req.body.ids as string[]), { ok: true })));
   app.patch("/api/lectures/:id", wrap((req) => (repo.renameLecture(String(req.params.id), String(req.body.title)), { ok: true })));
-  app.post("/api/lectures/:id/lesson", wrap(async (req) => ({ lessonId: (await engine.startLectureLesson(String(req.params.id))).id })));
+  app.post("/api/lectures/:id/lesson", wrap(async (req) => {
+    const lesson = await engine.startLectureLesson(String(req.params.id));
+    engine.prefetch.schedule(lesson.id); // the first explanation or question, while the page opens
+    return { lessonId: lesson.id };
+  }));
 
   app.get("/api/sources/:id/pages/:page", wrap((req) => {
     const id = String(req.params.id);
@@ -127,22 +145,44 @@ export function createApp(ctx: AppContext) {
   app.post("/api/lessons", wrap(async (req) => {
     const objective = String(req.body.objective ?? "").trim();
     if (!objective) throw Object.assign(new Error("Describe what you want to learn"), { status: 400 });
-    return { lessonId: (await engine.startObjectiveLesson(objective, req.body.courseId ?? null)).id };
+    const lesson = await engine.startObjectiveLesson(objective, req.body.courseId ?? null);
+    engine.prefetch.schedule(lesson.id);
+    return { lessonId: lesson.id };
   }));
   app.get("/api/lessons/:id", wrap((req) => view(String(req.params.id))));
   app.post("/api/lessons/:id/advance", wrap(async (req) => {
     const id = String(req.params.id);
     await engine.processPendingReasoning().catch(() => 0);
-    await engine.advance(id);
+    // With prefetch on, an explanation ends the step: its question is prepared while it is read.
+    await engine.advance(id, { pauseAfterExplanation: engine.prefetch.enabled() });
+    engine.prefetch.schedule(id);
     return view(id);
   }));
   app.post("/api/lessons/:id/answer", wrap(async (req) => {
     const id = String(req.params.id);
     const { questionId, ...attempt } = req.body;
     await engine.answer(id, String(questionId), attempt);
+    engine.prefetch.schedule(id); // what follows this answer is now determined
     return view(id);
   }));
-  app.post("/api/lessons/:id/skip-review", wrap(async (req) => (await engine.skipReview(String(req.params.id)), view(String(req.params.id)))));
+  app.post("/api/lessons/:id/skip-review", wrap(async (req) => {
+    const id = String(req.params.id);
+    await engine.skipReview(id);
+    engine.prefetch.schedule(id);
+    return view(id);
+  }));
+  app.post("/api/lessons/:id/skip", wrap(async (req) => {
+    const id = String(req.params.id);
+    const conceptId = String(req.body?.conceptId ?? "");
+    if (!conceptId) throw Object.assign(new Error("Choose the concept to skip"), { status: 400 });
+    await engine.skipConcept(id, conceptId);
+    await engine.advance(id, { pauseAfterExplanation: engine.prefetch.enabled() });
+    engine.prefetch.schedule(id);
+    return view(id);
+  }));
+  // The lesson page opened (prepare what Continue will need) or closed (cancel what was prepared).
+  app.post("/api/lessons/:id/prefetch", wrap((req) => (engine.prefetch.schedule(String(req.params.id)), { ok: true })));
+  app.post("/api/lessons/:id/leave", wrap((req) => ({ cancelled: engine.prefetch.cancel(String(req.params.id)) })));
   app.get("/api/lessons/:id/export.md", wrap((req, res) => {
     const v = view(String(req.params.id));
     const md = lessonToMarkdown(v);
@@ -154,6 +194,30 @@ export function createApp(ctx: AppContext) {
     res.send(md);
     return undefined;
   }));
+
+  // ── Exam practice ──
+  app.get("/api/courses/:id/practice", wrap((req) => practice.listSets(String(req.params.id))));
+  app.get("/api/courses/:id/practice/candidates", wrap((req) => practice.candidates(String(req.params.id))));
+  app.post("/api/courses/:id/practice", wrap((req) => practice.create(String(req.params.id), req.body ?? {})));
+  app.get("/api/practice/problems/:problemId", wrap((req) => practice.getProblem(String(req.params.problemId))));
+  app.post("/api/practice/problems/:problemId/primer", wrap((req) => practice.startPrimer(String(req.params.problemId))));
+  app.post("/api/practice/problems/:problemId/primer/skip", wrap((req) => practice.skipPrimer(String(req.params.problemId))));
+  app.post("/api/practice/problems/:problemId/primer/:index/answer", wrap((req) => practice.answerProbe(String(req.params.problemId), req.params.index, req.body ?? {})));
+  app.post("/api/practice/steps/:stepId/coach", wrap((req) => practice.coach(String(req.params.stepId))));
+  app.post("/api/practice/coaching/:coachingId/check", wrap((req) => practice.answerCheck(String(req.params.coachingId), req.body ?? {})));
+  app.post("/api/practice/problems/:problemId/learn", wrap((req) => practice.learn(String(req.params.problemId), req.body?.conceptId)));
+  app.post("/api/practice/steps/:stepId/attempt", wrap((req) => practice.attempt(String(req.params.stepId), req.body ?? {})));
+  app.post("/api/practice/steps/:stepId/reveal", wrap((req) => practice.reveal(String(req.params.stepId))));
+  app.post("/api/practice/steps/:stepId/skip", wrap((req) => practice.skip(String(req.params.stepId))));
+  app.post("/api/practice/attempts/:attemptId/override", wrap((req) => practice.override(String(req.params.attemptId))));
+  app.get("/api/practice/:setId", wrap((req) => practice.getSet(String(req.params.setId))));
+  app.post("/api/practice/:setId/retry", wrap((req) => practice.retry(String(req.params.setId))));
+  app.delete("/api/practice/:setId", wrap((req) => practice.delete(String(req.params.setId))));
+
+  // ── Follow-up questions (practice steps, coaching rounds, lesson blocks) ──
+  app.post("/api/follow-ups", wrap((req) => ctx.followUps.ask(req.body ?? {})));
+  app.get("/api/follow-ups/:threadId", wrap((req) => ctx.followUps.thread(String(req.params.threadId))));
+  app.post("/api/follow-ups/turns/:turnId/retry", wrap((req) => ctx.followUps.retry(String(req.params.turnId))));
 
   // ── Review & concept graph ──
   app.get("/api/review", wrap(() => reviewQueue(repo)));

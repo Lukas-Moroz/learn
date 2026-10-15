@@ -12,6 +12,7 @@ import type {
   ReasoningEvaluation,
   Strategy,
 } from "../../shared/schemas.ts";
+import { tokens } from "../../shared/similarity.ts";
 
 export interface AttemptFact {
   correct: boolean | null;
@@ -31,6 +32,9 @@ export interface ConceptFacts {
   role: ConceptRole;
   mastery: MasterySummary;
   activeMisconceptions: string[];
+  /** Labels and descriptions of the active misconceptions, for choosing which prerequisite to revisit. */
+  misconceptionText?: string;
+  definition?: string;
   prerequisites: string[];
   history: HistoryEvent[];
   /** Strategies that preceded a wrong answer, across all lessons. */
@@ -135,10 +139,28 @@ export function detourTarget(snap: Snapshot, f: ConceptFacts): string | null {
     .filter((p) => !inStack.has(p) && !state.detourHistory.includes(`${f.id}>${p}`) && !state.deferred.includes(p))
     .map((p) => snap.facts(p))
     .filter((p) => p.mastery.status !== "demonstrated");
-  // Prefer a prerequisite with known misconceptions, then one never assessed.
+  // Prefer the prerequisite the learner's misconception points at; then one with known
+  // misconceptions of its own, then one never assessed.
   const rank = (p: ConceptFacts) => (p.activeMisconceptions.length ? 0 : p.mastery.status === "not_assessed" ? 1 : 2);
-  candidates.sort((a, b) => rank(a) - rank(b));
+  const related = new Map(candidates.map((p) => [p.id, misconceptionRelatedness(f, p)]));
+  candidates.sort((a, b) => related.get(b.id)! - related.get(a.id)! || rank(a) - rank(b));
   return candidates[0]?.id ?? null;
+}
+
+// Stems that say how a misconception is phrased, not what it is about ("Assumes …", "Thinks …").
+const FRAMING = new Set(["think", "belie", "assum", "treat", "confu", "means", "uses", "mista", "ignor", "expec", "learn"]);
+const stems = (text: string) => tokens(text).filter((t) => t.length > 2).map((t) => t.slice(0, 5));
+
+/** Content words shared by the learner's misconceptions about `f` and a prerequisite's name and definition. */
+export function misconceptionRelatedness(f: ConceptFacts, pre: ConceptFacts): number {
+  const text = f.misconceptionText ?? f.activeMisconceptions.join(" ");
+  if (!text.trim()) return 0;
+  const own = new Set(stems(f.name)); // words of the concept itself don't say which prerequisite is at fault
+  const cue = new Set(stems(text).filter((w) => !own.has(w) && !FRAMING.has(w)));
+  const target = new Set(stems(`${pre.name} ${pre.definition ?? ""}`));
+  let n = 0;
+  for (const w of cue) if (target.has(w)) n++;
+  return n;
 }
 
 export function plan(snap: Snapshot): Action {

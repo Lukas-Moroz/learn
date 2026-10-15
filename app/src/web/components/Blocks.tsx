@@ -1,21 +1,27 @@
+import type { ReactNode } from "react";
+import { SkeletonLines } from "./Progress.tsx";
 import type { SourceRef } from "../../shared/schemas.ts";
 import type { BlockView } from "../api.ts";
-import { Markdown, Tex } from "./Markdown.tsx";
+import { Markdown, PreviewMarkdown, Tex } from "./Markdown.tsx";
 import { Mermaid } from "./Mermaid.tsx";
 import { StatusBadge } from "./QuestionCard.tsx";
 import type { SourceTarget } from "./SourceDrawer.tsx";
 
 type Open = (t: SourceTarget) => void;
 
-const ROLE: Record<string, [string, string]> = {
-  central: ["Central", "central"],
-  background: ["Background", ""],
-  optional: ["Optional", "optional"],
+const ROLE: Record<string, [string, string, string]> = {
+  central: ["Central", "central", "A main idea of this material: you'll also apply it in an unfamiliar situation"],
+  background: ["Background", "", "Supporting knowledge: checked briefly, and skipped if you already know it"],
+  optional: ["Optional", "optional", "Deeper exploration you can leave out"],
 };
 
 export function RoleBadge({ role }: { role: string }) {
-  const [label, cls] = ROLE[role] ?? [role, ""];
-  return <span className={`badge ${cls}`}>{label}</span>;
+  const [label, cls, help] = ROLE[role] ?? [role, "", ""];
+  return (
+    <span className={`badge ${cls}`} title={help || undefined}>
+      {label}
+    </span>
+  );
 }
 
 export function RefChip({ r, open }: { r: SourceRef | { sourceId: string; page: number; label?: string | null; quote?: string }; open: Open }) {
@@ -30,7 +36,7 @@ function Provenance({ refs, provenance, open }: { refs: SourceRef[]; provenance:
   if (refs.length) {
     return (
       <div className="provenance">
-        <span>AI-written explanation of</span>
+        <span>{provenance === "source" ? "AI-written explanation of" : "Supplementary explanation (AI-written, not quoted from the source). Related:"}</span>
         {refs.map((r, i) => (
           <RefChip key={i} r={r} open={open} />
         ))}
@@ -43,76 +49,87 @@ function Provenance({ refs, provenance, open }: { refs: SourceRef[]; provenance:
   return null;
 }
 
-export function OverviewBlock({ b, open }: { b: BlockView; open: Open }) {
+/** Overview and plan stay one tap away: collapsed once the learner has started, or on a phone. */
+export function OverviewBlock({ b, open, collapsed = false }: { b: BlockView; open: Open; collapsed?: boolean }) {
   const p = b.payload;
   return (
     <section className="block card" id={b.id}>
       <div className="kicker">{p.kind === "paper" ? "Paper overview" : "Lecture overview"} · AI summary of the document</div>
       <h1 style={{ marginTop: "0.3rem" }}>{p.title}</h1>
-      {p.researchQuestion && (
-        <p>
-          <b>Research question.</b> {p.researchQuestion}
-        </p>
-      )}
-      {p.motivation && <p className="muted">{p.motivation}</p>}
-      <Markdown text={p.overview} />
-      {(["contributions", "methods", "experiments", "conclusions"] as const).map((k) =>
-        p[k]?.length ? (
-          <details className="expand" key={k}>
-            <summary>{k[0].toUpperCase() + k.slice(1)}</summary>
+      <details className="outline" open={!collapsed}>
+        <summary>
+          Overview and learning path <span className="muted small">· {p.path.length} concepts</span>
+        </summary>
+        {p.researchQuestion && (
+          <p>
+            <b>Research question.</b> {p.researchQuestion}
+          </p>
+        )}
+        {p.motivation && <p className="muted">{p.motivation}</p>}
+        <Markdown text={p.overview} />
+        {(["contributions", "methods", "experiments", "conclusions"] as const).map((k) =>
+          p[k]?.length ? (
+            <details className="expand" key={k}>
+              <summary>{k[0].toUpperCase() + k.slice(1)}</summary>
+              <ul>
+                {p[k].map((x: string, i: number) => (
+                  <li key={i}>
+                    <Markdown text={x} inline />
+                  </li>
+                ))}
+              </ul>
+            </details>
+          ) : null,
+        )}
+        {p.structure?.length > 0 && (
+          <details className="expand">
+            <summary>Structure ({p.structure.length} sections)</summary>
             <ul>
-              {p[k].map((x: string, i: number) => (
+              {p.structure.map((s: any, i: number) => (
                 <li key={i}>
-                  <Markdown text={x} inline />
+                  {s.title} {s.ref && <RefChip r={s.ref} open={open} />}
                 </li>
               ))}
             </ul>
           </details>
-        ) : null,
-      )}
-      {p.structure?.length > 0 && (
-        <details className="expand">
-          <summary>Structure ({p.structure.length} sections)</summary>
-          <ul>
-            {p.structure.map((s: any, i: number) => (
-              <li key={i}>
-                {s.title} {s.ref && <RefChip r={s.ref} open={open} />}
-              </li>
-            ))}
-          </ul>
-        </details>
-      )}
-      <div className="section-title">Learning path</div>
-      <ol style={{ margin: 0, paddingLeft: "1.3em" }}>
-        {p.path.map((c: any) => (
-          <li key={c.conceptId} style={{ margin: "0.25rem 0" }}>
-            <span className="row" style={{ display: "inline-flex", gap: "0.4rem" }}>
-              {c.name} <RoleBadge role={c.role} /> {c.ref && <RefChip r={c.ref} open={open} />}
-            </span>
-          </li>
-        ))}
-      </ol>
-      <p className="muted small" style={{ marginBottom: 0 }}>
-        Background concepts are checked briefly first. Anything you already know is skipped.
-      </p>
+        )}
+        <div className="section-title">Learning path</div>
+        <ol style={{ margin: 0, paddingLeft: "1.3em" }}>
+          {p.path.map((c: any) => (
+            <li key={c.conceptId} style={{ margin: "0.25rem 0" }}>
+              <span className="row" style={{ display: "inline-flex", gap: "0.4rem" }}>
+                {c.name} <RoleBadge role={c.role} /> {c.ref && <RefChip r={c.ref} open={open} />}
+              </span>
+            </li>
+          ))}
+        </ol>
+        <p className="muted small" style={{ marginBottom: 0 }}>
+          Background concepts are checked briefly first. Anything you already know is skipped.
+        </p>
+      </details>
     </section>
   );
 }
 
-export function PlanBlock({ b }: { b: BlockView }) {
+export function PlanBlock({ b, collapsed = false }: { b: BlockView; collapsed?: boolean }) {
   const p = b.payload;
   return (
     <section className="block card" id={b.id}>
       <div className="kicker">Plan</div>
       <h1 style={{ marginTop: "0.3rem" }}>{p.title}</h1>
-      <Markdown text={p.overview} />
-      <ol style={{ margin: 0, paddingLeft: "1.3em" }}>
-        {p.path.map((c: any) => (
-          <li key={c.conceptId}>
-            {c.name} <RoleBadge role={c.role} />
-          </li>
-        ))}
-      </ol>
+      <details className="outline" open={!collapsed}>
+        <summary>
+          Overview and learning path <span className="muted small">· {p.path.length} concepts</span>
+        </summary>
+        <Markdown text={p.overview} />
+        <ol style={{ margin: 0, paddingLeft: "1.3em" }}>
+          {p.path.map((c: any) => (
+            <li key={c.conceptId}>
+              {c.name} <RoleBadge role={c.role} />
+            </li>
+          ))}
+        </ol>
+      </details>
     </section>
   );
 }
@@ -124,7 +141,61 @@ const PURPOSE_KICKER: Record<string, string> = {
   return: "Back on track",
 };
 
-export function ExplanationBlock({ b, open, conceptName }: { b: BlockView; open: Open; conceptName: string }) {
+/** "writing…" next to a heading while its text streams in. */
+export function Writing() {
+  return (
+    <span className="writing">
+      <span className="writing-dot" aria-hidden /> writing…
+    </span>
+  );
+}
+
+/** "Revising…": the text being written didn't pass the checks and is being rewritten. */
+export function Revising({ what = "the explanation" }: { what?: string }) {
+  return (
+    <p className="working small revising">
+      <span className="spinner" aria-hidden />
+      <span className="grow">Revising {what}…</span>
+    </p>
+  );
+}
+
+/**
+ * A provisional explanation, shown while it is being written, laid out like the block that
+ * replaces it once it validates. Not announced as it grows (aria-live off); the page announces
+ * the finished block once.
+ */
+export function ExplanationPreview({ fields, revising, conceptName, label = "Explanation" }: { fields: Record<string, string> | null; revising: boolean; conceptName: string; label?: string }) {
+  return (
+    <section className={`block preview${!fields && !revising ? " skeleton" : ""}`} aria-live="off" aria-busy="true" aria-label={`${label} being written`}>
+      <div className="kicker">
+        {label}
+        {conceptName ? ` · ${conceptName}` : ""} {!revising && <Writing />}
+      </div>
+      {revising ? (
+        <Revising />
+      ) : !fields ? (
+        <>
+          <span className="skeleton-line" style={{ width: "45%", height: "1.3rem", margin: "0.5rem 0 0.7rem" }} aria-hidden />
+          <SkeletonLines lines={4} />
+        </>
+      ) : (
+        <>
+          {fields.title && <h2 style={{ margin: "0.25rem 0 0.2rem" }}>{fields.title}</h2>}
+          {fields.body && <PreviewMarkdown text={fields.body} />}
+          {fields.workedExample && (
+            <details className="expand" open>
+              <summary>Worked example</summary>
+              <PreviewMarkdown text={fields.workedExample} />
+            </details>
+          )}
+        </>
+      )}
+    </section>
+  );
+}
+
+export function ExplanationBlock({ b, open, conceptName, footer }: { b: BlockView; open: Open; conceptName: string; footer?: ReactNode }) {
   const p = b.payload;
   return (
     <section className="block" id={b.id}>
@@ -160,6 +231,7 @@ export function ExplanationBlock({ b, open, conceptName }: { b: BlockView; open:
         </p>
       )}
       <Provenance refs={b.refs} provenance={b.provenance} open={open} />
+      {footer}
     </section>
   );
 }

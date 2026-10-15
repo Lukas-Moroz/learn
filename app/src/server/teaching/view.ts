@@ -4,7 +4,10 @@
 import type { AttemptRow, LessonRow, QuestionRow } from "../db/repo.ts";
 import type { AttemptView, Block, QuestionView } from "../../shared/schemas.ts";
 import type { Engine } from "./engine.ts";
+import { visibleOptionRefs } from "../../shared/grading.ts";
 import { currentConcept } from "./planner.ts";
+import { FollowUpRepo } from "../followup/repo.ts";
+import type { FollowUpThreadView } from "../../shared/followup.ts";
 
 export function questionView(q: QuestionRow, attempt: AttemptRow | undefined): QuestionView {
   return {
@@ -21,6 +24,11 @@ export function questionView(q: QuestionRow, attempt: AttemptRow | undefined): Q
   };
 }
 
+/** Reasoning feedback as the learner sees it: option values rewritten to displayed choice numbers. */
+function visibleReasoning<R extends { summary: string; issues: string[] } | null>(r: R, q: QuestionRow): R {
+  return r && { ...r, summary: visibleOptionRefs(r.summary, q.options), issues: r.issues.map((i) => visibleOptionRefs(i, q.options)) };
+}
+
 export function attemptView(q: QuestionRow, a: AttemptRow): AttemptView {
   return {
     id: a.id,
@@ -30,8 +38,8 @@ export function attemptView(q: QuestionRow, a: AttemptRow): AttemptView {
     ...(a.note ? { note: a.note } : {}),
     correct: a.correct,
     correctValues: q.correct,
-    explanation: q.explanation,
-    reasoning: a.reasoning,
+    explanation: visibleOptionRefs(q.explanation, q.options),
+    reasoning: visibleReasoning(a.reasoning, q),
     reasoningStatus: a.reasoning_status,
     createdAt: a.created_at,
   };
@@ -42,10 +50,17 @@ const ROLE_LABEL = { central: "Central to the source", background: "Useful backg
 export function lessonView(engine: Engine, lesson: LessonRow) {
   const repo = engine.repo;
   const state = lesson.state;
-  const blocks = repo.listBlocks(lesson.id).map((b): Block & { question?: QuestionView } => {
+  const threads = new FollowUpRepo(repo).threadsForLesson(lesson.id);
+  const blocks = repo.listBlocks(lesson.id).map((b): Block & { question?: QuestionView; followUp?: FollowUpThreadView | null } => {
+    if (b.type === "explanation") return { ...b, followUp: threads.get(b.id) ?? null };
+    if (b.type === "feedback") {
+      const q = b.payload.reasoning ? repo.getQuestion(b.payload.questionId) : undefined;
+      const withThread = { ...b, followUp: threads.get(b.id) ?? null };
+      return q ? { ...withThread, payload: { ...b.payload, reasoning: visibleReasoning(b.payload.reasoning, q) } } : withThread;
+    }
     if (b.type !== "question") return b;
     const q = repo.getQuestion(b.payload.questionId)!;
-    return { ...b, question: questionView(q, repo.attemptsForQuestion(q.id).find((a) => a.lesson_id === lesson.id)) };
+    return { ...b, question: { ...questionView(q, repo.attemptsForQuestion(q.id).find((a) => a.lesson_id === lesson.id)), ...(b.payload.skipped ? { skipped: true } : {}) } };
   });
 
   const course = lesson.course_id ? repo.getCourse(lesson.course_id) : undefined;
@@ -93,7 +108,7 @@ export function lessonView(engine: Engine, lesson: LessonRow) {
   return {
     lesson: { id: lesson.id, title: lesson.title, objective: lesson.objective, courseId: lesson.course_id, lectureId: lesson.lecture_id, updatedAt: lesson.updated_at, createdAt: lesson.created_at },
     source: source ? { id: source.id, unit: source.unit, pageCount: source.page_count, filename: source.filename, kind: source.kind, version: source.version } : null,
-    state: { pendingQuestionId: state.pendingQuestionId, complete: state.complete, reviewQueue: state.reviewQueue, detours: state.detours.length },
+    state: { conceptId: cur, pendingQuestionId: state.pendingQuestionId, complete: state.complete, reviewQueue: state.reviewQueue, detours: state.detours.length },
     nav,
     concepts,
     blocks,

@@ -79,8 +79,20 @@ app/src/server/
   graph/             shared concept graph + course-specific contexts
   ai/                prompt builders, principle loader, JSON-contract calls, cache
   providers/         openai-siwc, claude-cli, mock, router, keychain encryption
+  practice/          exam practice: extraction, deterministic step grading, and guided
+                     practice (guide.ts): a warm-up probing a problem's prerequisites,
+                     and coaching after a miss instead of the key (key-leak checked): the explanation is
+                     generated and committed first, its check question afterwards
+  followup/          follow-up questions: a thread per practice step, coaching round or lesson
+                     block (migration 4); task "follow_up" through Generator.run, streamed
+                     ("answer"), refs verified; before a step is finished the key is forbidden
+                     context and previews/answers are leak-checked; an unanswered lesson
+                     question's correct option is never named; never touches lesson state
   teaching/          engine (state machine), planner (next action), diagnosis,
-                     remediation strategies, checkpoints, review scheduling
+                     remediation strategies, checkpoints, review scheduling;
+                     prefetch.ts prepares the next explanation/question in the background
+                     (setting "prefetch", default on; ≤ 2 hidden jobs per lesson; cancelled
+                     when the lesson page closes) so Continue reveals it at once
   routes/            HTTP + SSE
 app/src/web/         React UI
 ```
@@ -88,8 +100,9 @@ app/src/web/         React UI
 ## 6. Key invariants
 
 1. **The LLM never owns state.** Position, detour stack, attempts, evidence, misconceptions, checkpoints are rows written in transactions by the engine.
-2. **Nothing generated is committed until it completes and validates.** Streaming output goes to an `ai_jobs` row. A failed or interrupted stream leaves the job `failed` and creates no block, attempt or checkpoint.
-3. **Citations are checked, not trusted.** A ref to a non-existent page is dropped. A quote not found on its page is removed. Generated text without a surviving ref is labelled *supplementary*.
+2. **Nothing generated is committed until it completes and validates.** Streaming output goes to an `ai_jobs` row. A failed or interrupted stream leaves the job `failed` and creates no block, attempt or checkpoint. While it streams, the server may publish a throttled *preview* of its text fields over SSE (`partial-json.ts`), which the client shows provisionally where the block will appear; previews are never stored or committed, and a practice preview is leak-checked against the step's key before it is published (a leaking one is withheld and the client shows "revising…"). A question previews only its stem; its options arrive with the validated question. A **prepared** (prefetched) generation runs hidden: it publishes no events and appears in no view until the engine executes the same move and finds a prepared result for exactly the same generation input (a key over the input; a question's deterministic checks run again against the state at that moment). Only then is it revealed, streaming from where it is if still being written, and committed like any other.
+3. **Citations are checked, not trusted.** A ref to a non-existent page is dropped. A quote not found on its page is removed. Generated text without a verified quote is labelled *supplementary* (page-only refs are still shown as related pages).
 4. **Correctness and reasoning are graded separately.** Selection grading is deterministic. Written reasoning gets its own verdict, and a correct pick with flawed reasoning earns recognition evidence only.
 5. **Mastery is multi-dimensional evidence**, never one correct answer.
 6. **Same document, same work:** sources are content-addressed (SHA-256). Re-import of an unchanged file reuses extraction and analysis. A changed file becomes a new version of the same document, and history is kept.
+7. **Skipping is a navigation choice.** Practice migration 5 stores a step's skipped flag separately from attempts: it unlocks the next step without revealing the key or changing mastery evidence, survives restart, and clears on a real retry. Coaching and its check are optional. Lesson skips preserve answers, defer the current concept or return from a prerequisite detour, mark unanswered questions skipped, and continue; the expected concept ID prevents stale clicks from skipping the following concept. Review skips leave the question due.

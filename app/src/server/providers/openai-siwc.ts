@@ -33,38 +33,76 @@ interface ChatGPTClient {
 
 export const USAGE_URL = "https://chatgpt.com/settings/usage";
 
-/** Map DevKit error codes onto our provider error vocabulary. */
+const USAGE_LIMIT_CODES = new Set(["subscription_sharing_usage_limit_exceeded", "usage_limit_exceeded", "usage_limit_reached", "insufficient_quota"]);
+const AUTH_CODES = new Set([
+  "sign_in_required", "sharing_not_enabled", "invalid_refresh_token", "token_expired", "refresh_token_expired", "refresh_token_invalidated",
+  "refresh_token_reused", "invalid_grant", "invalid_token", "invalid_api_key", "invalid_client", "invalid_id_token", "invalid_token_response",
+  "chatpass_v2_scope_not_authorized", "chatpass_v2_invalid_authorization_context", "registration_upgrade_required", "profile_not_found",
+]);
+const NOT_ENABLED_CODES = new Set(["subscription_sharing_user_not_eligible", "subscription_sharing_invalid_user", "subscription_sharing_v2_client_not_enabled"]);
+const INTERRUPTED_CODES = new Set(["stream_interrupted", "response_incomplete", "invalid_stream"]);
+const UNSUPPORTED_CODES = new Set(["subscription_sharing_unsupported_capability", "subscription_sharing_route_not_supported", "model_not_found"]);
+/** Failures that a later attempt can be expected to get past. */
+const TRANSIENT_CODES = new Set([
+  "rate_limit_exceeded", "server_error", "network_error", "connection_error", "invalid_response", "invalid_model_catalog", "discovery_failed",
+  "refresh_not_ready", "identity_verification_unavailable", "subscription_sharing_usage_unavailable", "subscription_sharing_user_unavailable",
+]);
+
+const safeId = (v: unknown, max = 100): string | undefined => (typeof v === "string" && v.length <= max && /^[\w][\w.:[\]-]*$/.test(v) ? v : undefined);
+
+/** A DevKit message, minus anything credential-shaped (it never should carry one, but this text reaches logs and the browser). */
+function safeMessage(m: unknown): string {
+  return String(m ?? "")
+    .replace(/\bBearer\s+\S+/gi, "Bearer [redacted]")
+    .replace(/\beyJ[\w-]+\.[\w-]+(?:\.[\w-]+)?/g, "[redacted]")
+    .replace(/\b(?:sk|rt|at|sess)-[\w-]{12,}/g, "[redacted]")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 300);
+}
+
+/**
+ * Map DevKit errors onto our provider error vocabulary. The DevKit's own code, HTTP status and
+ * request id are kept in `detail` (and the code in the message when it is otherwise generic), so a
+ * failure can be diagnosed; transient failures are marked retryable.
+ */
 export function mapChatGPTError(e: any): ProviderError {
-  const code: string = e?.code ?? "unknown";
-  const msg: string = e?.message ?? String(e);
-  switch (code) {
-    case "subscription_sharing_usage_limit_exceeded":
-      return new ProviderError("usage_limit", msg, false, { usageUrl: USAGE_URL });
-    case "sign_in_required":
-    case "sharing_not_enabled":
-    case "invalid_refresh_token":
-    case "token_expired":
-    case "refresh_token_expired":
-    case "refresh_token_invalidated":
-    case "refresh_token_reused":
-    case "invalid_grant":
-    case "invalid_token":
-      return new ProviderError("auth_required", msg);
-    case "subscription_sharing_user_not_eligible":
-    case "subscription_sharing_invalid_user":
-      return new ProviderError("not_enabled", msg);
-    case "stream_interrupted":
-    case "response_incomplete":
-    case "invalid_stream":
-      return new ProviderError("interrupted", msg, true);
-    case "cancelled":
-      return new ProviderError("cancelled", msg);
-    case "subscription_sharing_unsupported_capability":
-    case "subscription_sharing_route_not_supported":
-      return new ProviderError("unsupported", msg);
-    default:
-      return new ProviderError("unavailable", msg, Boolean(e?.retryable));
-  }
+  const code = safeId(e?.code) ?? "unknown";
+  const status = typeof e?.status === "number" ? e.status : undefined;
+  const requestId = safeId(e?.requestId, 160);
+  const msg = safeMessage(e?.message ?? e) || "ChatGPT request failed.";
+  const detail = { devkitCode: code, ...(status !== undefined ? { status } : {}), ...(requestId ? { requestId } : {}) };
+  if (USAGE_LIMIT_CODES.has(code)) return new ProviderError("usage_limit", msg, false, { ...detail, usageUrl: USAGE_URL });
+  if (AUTH_CODES.has(code) || (status === 401 && !TRANSIENT_CODES.has(code))) return new ProviderError("auth_required", msg, false, detail);
+  if (NOT_ENABLED_CODES.has(code)) return new ProviderError("not_enabled", msg, false, detail);
+  if (INTERRUPTED_CODES.has(code)) return new ProviderError("interrupted", msg, true, detail);
+  if (code === "cancelled") return new ProviderError("cancelled", msg, false, detail);
+  if (UNSUPPORTED_CODES.has(code)) return new ProviderError("unsupported", msg, false, detail);
+  const transient =
+    Boolean(e?.retryable) ||
+    TRANSIENT_CODES.has(code) ||
+    status === 429 ||
+    (status !== undefined && status >= 500) ||
+    /rate_?limit|overload|temporar|timeout|unavailable/i.test(code) ||
+    // A generic failure reported inside an accepted stream (no HTTP error) is usually server-side.
+    ((code === "api_error" || code === "unknown") && (status === undefined || status < 400));
+  const where = [code !== "unknown" ? code : null, status && status !== 200 ? `HTTP ${status}` : null].filter(Boolean).join(", ");
+  return new ProviderError("unavailable", where ? `${msg} (${where})` : msg, transient, detail);
+}
+
+function wait(ms: number, signal?: AbortSignal): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (signal?.aborted) return reject(new ProviderError("cancelled", "Cancelled"));
+    const onAbort = () => {
+      clearTimeout(timer);
+      reject(new ProviderError("cancelled", "Cancelled"));
+    };
+    const timer = setTimeout(() => {
+      signal?.removeEventListener("abort", onAbort);
+      resolve();
+    }, ms);
+    signal?.addEventListener("abort", onAbort, { once: true });
+  });
 }
 
 export interface OpenAIProviderOptions {
@@ -74,6 +112,8 @@ export interface OpenAIProviderOptions {
   encryption: CredentialEncryption;
   /** Injected in tests. */
   loadDevkit?: () => Promise<{ createChatGPT: (c: any) => ChatGPTClient }>;
+  /** Pause before the one automatic retry of a transient failure (tests set it to 0). */
+  retryDelayMs?: number;
 }
 
 export class OpenAIProvider implements AIProvider {
@@ -182,16 +222,29 @@ export class OpenAIProvider implements AIProvider {
     if (!client) throw new ProviderError("not_installed", this.loadError ?? "Not installed");
     const model = this.model();
     if (!model) throw new ProviderError("auth_required", "Choose a ChatGPT model in Settings first.");
-    try {
-      return await client.streamResponse({
-        model,
-        instructions: req.instructions,
-        input: req.messages.map((m) => ({ role: m.role, content: m.content })),
-        signal: req.signal,
-        onDelta: req.onDelta,
-      });
-    } catch (e) {
-      throw mapChatGPTError(e);
+    for (let attempt = 0; ; attempt++) {
+      let received = false;
+      try {
+        return await client.streamResponse({
+          model,
+          instructions: req.instructions,
+          input: req.messages.map((m) => ({ role: m.role, content: m.content })),
+          signal: req.signal,
+          onDelta: (d) => {
+            received = true;
+            req.onDelta?.(d);
+          },
+        });
+      } catch (e) {
+        const err = mapChatGPTError(e);
+        // One quiet retry of a transient failure that happened before any text arrived (nothing
+        // was shown or saved yet). Usage limits, auth and interrupted streams are never retried here.
+        if (attempt === 0 && !received && err.code === "unavailable" && err.retryable && !req.signal?.aborted) {
+          await wait(this.o.retryDelayMs ?? 1500, req.signal);
+          continue;
+        }
+        throw err;
+      }
     }
   }
 }

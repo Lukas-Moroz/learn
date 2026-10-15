@@ -80,6 +80,7 @@ My reading of Anthropic's [published terms](https://code.claude.com/docs/en/lega
 - **No document?** Type a learning goal ("second-order Markov models") on the home page.
 - **Keyboard:** `1`–`9` choose · `0` I don't know · `S`/`U`/`G` confidence · `R` write reasoning · `Enter` submit · `⌘/Ctrl+Enter` continue · `Esc` closes panels · `←`/`→` page through the source.
 - **Progress panel:** click *Progress* or the concept name in the bar to see every concept's status and evidence.
+- **Keep moving:** after a miss, choose *Try again*, *Show solution*, or *Skip step*. Skipping moves straight to the next step or problem and keeps the skipped step available to revisit. In lessons, *Skip this concept* or *Skip prerequisite review* moves past a frustrating portion; in review, *Skip question* leaves it due for later. Explanations and practice check questions are optional, and skipping never counts as a correct answer.
 
 ### Where your data lives
 

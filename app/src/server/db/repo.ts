@@ -27,7 +27,11 @@ export interface SourceRow {
   id: string; document_id: string; sha256: string; kind: string; filename: string; stored_path: string;
   page_count: number; unit: "page" | "slide"; version: number; superseded_by: string | null; created_at: string;
 }
-export interface LectureRow { id: string; course_id: string; title: string; position: number; document_id: string | null; created_at: string }
+export interface LectureRow {
+  id: string; course_id: string; title: string; position: number; document_id: string | null; created_at: string;
+  /** "practice": the document belongs to a practice set (study guide or solutions), so it isn't listed as a lecture. */
+  role: "lecture" | "practice";
+}
 export interface ConceptRow { id: string; slug: string; name: string; sense: string | null; definition: string; created_at: string }
 export interface LectureConceptRow { lecture_id: string; concept_id: string; role: ConceptRole; position: number; pages: number[]; section: string | null }
 export interface LessonRow {
@@ -48,6 +52,12 @@ export interface AttemptRow {
 export interface MisconceptionRow {
   id: string; concept_id: string; label: string; description: string | null; status: "suspected" | "likely" | "resolved";
   occurrences: number; strongest_confidence: Confidence | null; first_seen: string; last_seen: string; resolved_at: string | null;
+}
+export type ContributionSource = "lesson" | "practice" | "other";
+/** One occurrence of a misconception in the ledger (misconception_contributions). */
+export interface MisconceptionContribution {
+  id: number; concept_id: string; label: string; source_kind: ContributionSource; source_id: string | null;
+  confidence: Confidence | null; description: string | null; created_at: string; active: number;
 }
 export interface JobRow {
   id: string; lesson_id: string | null; task: string; status: "running" | "completed" | "failed" | "cancelled" | "interrupted";
@@ -151,11 +161,15 @@ export class Repo {
       position ??
       ((this.db.prepare("SELECT COALESCE(MAX(position), -1) + 1 AS p FROM lectures WHERE course_id = ?").get(courseId) as { p: number }).p);
     const row = { id: newId(), course_id: courseId, title, position: pos, document_id: documentId, created_at: now() };
-    this.db.prepare("INSERT INTO lectures VALUES (@id, @course_id, @title, @position, @document_id, @created_at)").run(row);
-    return row;
+    this.db
+      .prepare("INSERT INTO lectures (id, course_id, title, position, document_id, created_at) VALUES (@id, @course_id, @title, @position, @document_id, @created_at)")
+      .run(row);
+    return { ...row, role: "lecture" };
   }
-  listLectures(courseId: string): LectureRow[] {
-    return this.db.prepare("SELECT * FROM lectures WHERE course_id = ? ORDER BY position, created_at").all(courseId) as LectureRow[];
+  /** Lectures in order. Documents used by a practice set are left out unless asked for. */
+  listLectures(courseId: string, opts: { includePractice?: boolean } = {}): LectureRow[] {
+    const where = opts.includePractice ? "" : "AND role = 'lecture'";
+    return this.db.prepare(`SELECT * FROM lectures WHERE course_id = ? ${where} ORDER BY position, created_at`).all(courseId) as LectureRow[];
   }
   getLecture(id: string): LectureRow | undefined {
     return this.db.prepare("SELECT * FROM lectures WHERE id = ?").get(id) as LectureRow | undefined;
@@ -336,8 +350,8 @@ export class Repo {
       rubric: JSON.parse(r.rubric_json),
     };
   }
-  insertAttempt(a: Omit<AttemptRow, "id" | "created_at">): AttemptRow {
-    const row: AttemptRow = { ...a, id: newId(), created_at: now() };
+  insertAttempt(a: Omit<AttemptRow, "id" | "created_at"> & { created_at?: string }): AttemptRow {
+    const row: AttemptRow = { ...a, id: newId(), created_at: a.created_at ?? now() };
     this.db
       .prepare("INSERT INTO attempts VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
       .run(
@@ -370,6 +384,18 @@ export class Repo {
   allAttempts(): AttemptRow[] {
     return (this.db.prepare("SELECT * FROM attempts ORDER BY created_at").all() as any[]).map((r) => this.toAttempt(r));
   }
+  /** Atomically claim a pending reasoning evaluation; false when another caller already holds or finished it. */
+  claimPendingReasoning(id: string): boolean {
+    return Number(this.db.prepare("UPDATE attempts SET reasoning_status = 'running' WHERE id = ? AND reasoning_status = 'pending'").run(id).changes) === 1;
+  }
+  /** Give a claimed evaluation back (e.g. the provider was unavailable) so it is retried later. */
+  releaseReasoningClaim(id: string) {
+    this.db.prepare("UPDATE attempts SET reasoning_status = 'pending' WHERE id = ? AND reasoning_status = 'running'").run(id);
+  }
+  /** Complete a claimed evaluation; false when the claim is no longer held. Call inside the applying transaction. */
+  finishReasoningClaim(id: string, reasoning: ReasoningEvaluation): boolean {
+    return Number(this.db.prepare("UPDATE attempts SET reasoning_status = 'done', reasoning_json = ? WHERE id = ? AND reasoning_status = 'running'").run(json(reasoning), id).changes) === 1;
+  }
   pendingReasoning(): AttemptRow[] {
     return (this.db.prepare("SELECT * FROM attempts WHERE reasoning_status = 'pending' ORDER BY created_at").all() as any[]).map((r) =>
       this.toAttempt(r),
@@ -386,7 +412,8 @@ export class Repo {
       note: r.note,
       correct: r.correct === null ? null : !!r.correct,
       misconceptions: JSON.parse(r.misconceptions_json),
-      reasoning_status: r.reasoning_status,
+      // A claimed ("running") evaluation is still pending from every reader's point of view.
+      reasoning_status: r.reasoning_status === "running" ? "pending" : r.reasoning_status,
       reasoning: r.reasoning_json ? JSON.parse(r.reasoning_json) : null,
       created_at: r.created_at,
     };
@@ -405,40 +432,95 @@ export class Repo {
   conceptsWithEvidence(): string[] {
     return (this.db.prepare("SELECT DISTINCT concept_id FROM evidence").all() as { concept_id: string }[]).map((r) => r.concept_id);
   }
-  recordMisconception(conceptId: string, label: string, description: string | null, confidence: Confidence | null): MisconceptionRow {
-    const t = now();
-    const existing = this.db.prepare("SELECT * FROM misconceptions WHERE concept_id = ? AND label = ?").get(conceptId, label) as MisconceptionRow | undefined;
-    // A confidently held wrong answer, or a repeat, is stronger evidence than a single guess.
-    if (existing) {
-      const status = "likely";
+  /**
+   * Record one occurrence of a misconception: a ledger contribution keyed by what produced it
+   * (a lesson or practice attempt; 'other' for untracked callers), then rebuild the row.
+   */
+  recordMisconception(
+    conceptId: string, label: string, description: string | null, confidence: Confidence | null,
+    source: { kind: ContributionSource; id: string | null } = { kind: "other", id: null }, at: string = now(),
+  ): MisconceptionRow {
+    // Idempotent per (source, concept, label): the same source never counts a label twice;
+    // re-recording it refreshes (and reactivates) its one contribution.
+    this.db
+      .prepare(
+        `INSERT INTO misconception_contributions (concept_id, label, source_kind, source_id, confidence, description, created_at, active)
+         VALUES (?, ?, ?, ?, ?, ?, ?, 1)
+         ON CONFLICT (source_kind, source_id, concept_id, label) WHERE source_id IS NOT NULL
+         DO UPDATE SET description = COALESCE(excluded.description, description), active = 1`,
+      )
+      .run(conceptId, label, source.kind, source.id, confidence, description, at);
+    // A newer occurrence reopens a resolved row in the rebuild; the resolution history stays.
+    return this.rebuildMisconception(conceptId, label)!;
+  }
+
+  /** Active contributions of one source (optionally one label), oldest first. */
+  misconceptionContributions(kind: ContributionSource, sourceId: string, label?: string): MisconceptionContribution[] {
+    return (
       this.db
-        .prepare(
-          `UPDATE misconceptions SET occurrences = occurrences + 1, last_seen = ?, status = ?, resolved_at = NULL,
-           description = COALESCE(?, description), strongest_confidence = CASE WHEN ? = 'sure' THEN 'sure' ELSE strongest_confidence END
-           WHERE id = ?`,
-        )
-        .run(t, status, description, confidence, existing.id);
-      return this.db.prepare("SELECT * FROM misconceptions WHERE id = ?").get(existing.id) as MisconceptionRow;
+        .prepare("SELECT * FROM misconception_contributions WHERE source_kind = ? AND source_id = ? AND active = 1 ORDER BY created_at, id")
+        .all(kind, sourceId) as MisconceptionContribution[]
+    ).filter((c) => label === undefined || c.label === label);
+  }
+
+  /** Retract what one source contributed (all labels, or those `keep` rejects), rebuilding each affected row. */
+  retractMisconceptions(kind: ContributionSource, sourceId: string, keep: (label: string) => boolean = () => false) {
+    const hits = this.misconceptionContributions(kind, sourceId).filter((c) => !keep(c.label));
+    const deactivate = this.db.prepare("UPDATE misconception_contributions SET active = 0 WHERE id = ?");
+    for (const c of hits) deactivate.run(c.id);
+    const labels = new Map(hits.map((c) => [`${c.concept_id}\u0000${c.label}`, c]));
+    for (const c of labels.values()) this.rebuildMisconception(c.concept_id, c.label);
+  }
+
+  /** Replace the description of one source's contributions to a label (a richer diagnosis of the same occurrence). */
+  describeContribution(kind: ContributionSource, sourceId: string, conceptId: string, label: string, description: string) {
+    this.db
+      .prepare("UPDATE misconception_contributions SET description = ? WHERE source_kind = ? AND source_id = ? AND concept_id = ? AND label = ? AND active = 1")
+      .run(description, kind, sourceId, conceptId, label);
+    this.rebuildMisconception(conceptId, label);
+  }
+
+  /**
+   * Derive a misconception row purely from its active contributions, oldest first, with the
+   * recording rules: a single guess is suspected, a repeat or a sure answer likely; the first
+   * contribution's confidence, raised to sure by any sure one; the latest description given.
+   * No active contributions deletes the row (nothing supports it any more). A resolution stands
+   * while no active contribution is newer than it. The row keeps its id while it exists.
+   */
+  rebuildMisconception(conceptId: string, label: string): MisconceptionRow | undefined {
+    const current = this.db.prepare("SELECT * FROM misconceptions WHERE concept_id = ? AND label = ?").get(conceptId, label) as MisconceptionRow | undefined;
+    const cs = this.db
+      .prepare("SELECT * FROM misconception_contributions WHERE concept_id = ? AND label = ? AND active = 1 ORDER BY created_at, id")
+      .all(conceptId, label) as MisconceptionContribution[];
+    if (!cs.length) {
+      if (current) this.db.prepare("DELETE FROM misconceptions WHERE id = ?").run(current.id);
+      return undefined;
     }
+    const last = cs[cs.length - 1];
+    const lastResolved = (
+      this.db.prepare("SELECT MAX(resolved_at) AS t FROM misconception_resolutions WHERE concept_id = ? AND label = ?").get(conceptId, label) as { t: string | null }
+    ).t;
+    const resolved = lastResolved !== null && !cs.some((c) => c.created_at > lastResolved);
     const row: MisconceptionRow = {
-      id: newId(),
+      id: current?.id ?? newId(),
       concept_id: conceptId,
       label,
-      description,
-      status: confidence === "sure" ? "likely" : "suspected",
-      occurrences: 1,
-      strongest_confidence: confidence,
-      first_seen: t,
-      last_seen: t,
-      resolved_at: null,
+      description: [...cs].reverse().find((c) => c.description)?.description ?? null,
+      status: resolved ? "resolved" : cs.length > 1 || cs[0].confidence === "sure" ? "likely" : "suspected",
+      occurrences: cs.length,
+      strongest_confidence: cs.some((c) => c.confidence === "sure") ? "sure" : cs[0].confidence,
+      first_seen: cs[0].created_at,
+      last_seen: last.created_at,
+      resolved_at: resolved ? lastResolved : null,
     };
     this.db
       .prepare(
-        "INSERT INTO misconceptions VALUES (@id, @concept_id, @label, @description, @status, @occurrences, @strongest_confidence, @first_seen, @last_seen, @resolved_at)",
+        "INSERT OR REPLACE INTO misconceptions VALUES (@id, @concept_id, @label, @description, @status, @occurrences, @strongest_confidence, @first_seen, @last_seen, @resolved_at)",
       )
       .run(row);
     return row;
   }
+
   misconceptions(conceptId?: string): MisconceptionRow[] {
     return (
       conceptId
@@ -449,8 +531,26 @@ export class Repo {
   activeMisconceptions(conceptId: string): MisconceptionRow[] {
     return this.misconceptions(conceptId).filter((m) => m.status !== "resolved");
   }
-  resolveMisconceptions(conceptId: string) {
-    this.db.prepare("UPDATE misconceptions SET status = 'resolved', resolved_at = ? WHERE concept_id = ? AND status != 'resolved'").run(now(), conceptId);
+  /**
+   * Resolve one misconception at `at`: recorded in the resolution history (tagged with the lesson
+   * attempt that resolved it, when there is one), then the row rebuilt.
+   */
+  resolveMisconception(conceptId: string, label: string, at: string = now(), sourceAttemptId: string | null = null) {
+    this.db
+      .prepare("INSERT INTO misconception_resolutions (concept_id, label, resolved_at, source_attempt_id) VALUES (?, ?, ?, ?)")
+      .run(conceptId, label, at, sourceAttemptId);
+    return this.rebuildMisconception(conceptId, label);
+  }
+  /** Retract the resolutions one attempt made (its deferred reasoning turned out flawed), rebuilding each row. */
+  retractResolutionsBy(attemptId: string) {
+    const hits = this.db
+      .prepare("SELECT DISTINCT concept_id, label FROM misconception_resolutions WHERE source_attempt_id = ?")
+      .all(attemptId) as { concept_id: string; label: string }[];
+    this.db.prepare("DELETE FROM misconception_resolutions WHERE source_attempt_id = ?").run(attemptId);
+    for (const h of hits) this.rebuildMisconception(h.concept_id, h.label);
+  }
+  resolveMisconceptions(conceptId: string, at: string = now()) {
+    for (const m of this.activeMisconceptions(conceptId)) this.resolveMisconception(conceptId, m.label, at);
   }
 
   logStrategy(conceptId: string, lessonId: string | null, strategy: Strategy, blockId: string | null) {
@@ -498,6 +598,8 @@ export class Repo {
   }
   /** On boot: any job still "running" was cut off by a crash or restart. Its partial output is never used. */
   markInterruptedJobs(): number {
+    // At boot nothing is evaluating, so a reasoning claim left 'running' by a crash goes back to the queue.
+    this.db.prepare("UPDATE attempts SET reasoning_status = 'pending' WHERE reasoning_status = 'running'").run();
     return Number(
       this.db.prepare("UPDATE ai_jobs SET status = 'interrupted', finished_at = ? WHERE status = 'running'").run(now()).changes,
     );

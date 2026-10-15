@@ -127,7 +127,8 @@ h3 { font-size: 1.05rem; }
 .row { display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap; }
 .spacer { flex: 1; }
 .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem 1.15rem; box-shadow: var(--shadow); }
-.grid { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); }
+.grid { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr)); }
+.grid > * { min-width: 0; }
 .section-title { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin: 1.6rem 0 0.6rem; font-weight: 600; }
 input[type="text"], textarea, select { width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 0.5rem 0.65rem; }
 textarea { resize: vertical; min-height: 4.5rem; line-height: 1.5; }
@@ -246,7 +247,7 @@ details.expand > summary { cursor: pointer; color: var(--text-2); font-weight: 5
 .dim.weak { background: var(--warn-weak); color: var(--warn); }
 .dropzone { border: 1.5px dashed var(--border); border-radius: var(--radius); padding: 1rem; text-align: center; color: var(--muted); }
 .dropzone.over { border-color: var(--accent); background: var(--accent-weak); }
-.lecture-row { display: flex; gap: 0.6rem; align-items: center; padding: 0.45rem 0; border-top: 1px solid var(--border); }
+.lecture-row { display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: center; padding: 0.45rem 0; border-top: 1px solid var(--border); }
 .lecture-row:first-of-type { border-top: none; }
 .lecture-row .title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .toast { position: fixed; bottom: 1rem; left: 50%; transform: translateX(-50%); background: var(--text); color: var(--bg); padding: 0.55rem 1rem; border-radius: 8px; z-index: 60; font-size: 0.92rem; max-width: calc(100vw - 2rem); }
@@ -262,4 +263,316 @@ details.expand > summary { cursor: pointer; color: var(--text-2); font-weight: 5
   .topbar-inner { gap: 0.4rem; padding: 0.5rem 0.75rem; justify-content: space-between; }
   .topbar-actions { gap: 0; }
   .topbar-actions .btn.small { padding: 0.25rem 0.45rem; }
+}
+
+/* ── Home, concepts, review (audit) ── */
+.home .grow { flex: 1 1 12rem; min-width: 0; }
+.home .card { overflow-wrap: anywhere; }
+.home .choice h2 { margin: 0 0 0.3rem; font-size: 1.15rem; }
+.home .choice p { margin: 0 0 0.8rem; }
+.course-head { display: flex; align-items: baseline; gap: 0.5rem; margin-bottom: 0.3rem; }
+.course-head h3 { margin: 0; flex: 1; min-width: 0; }
+.lecture-row .lecture-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.lecture-row .title { white-space: normal; overflow: visible; overflow-wrap: anywhere; }
+.lecture-row .reorder { display: inline-flex; flex: none; }
+.lecture-row > .btn { flex: none; }
+.form-error { color: var(--bad); font-size: 0.875rem; margin: 0.5rem 0 0; }
+.review-count { margin: 0 0 1rem; }
+.review-summary { margin-top: 1.6rem; }
+
+/* ── Settings & source (audit) ── */
+.active-provider { margin: 0.6rem 0; gap: 0.5rem; flex-wrap: nowrap; }
+.active-provider .dot { flex: none; }
+.dialog details.more { margin-top: 0.5rem; font-size: 0.875rem; color: var(--text-2); }
+.dialog details.more > summary { cursor: pointer; color: var(--muted); width: fit-content; }
+.dialog details.more > p { margin: 0.4rem 0 0; }
+.dialog > details.more { margin-top: 1rem; }
+.dialog code { overflow-wrap: anywhere; }
+.drawer-head .pin[aria-pressed="true"] { background: var(--accent-weak); color: var(--accent); border-color: color-mix(in srgb, var(--accent) 35%, var(--border)); }
+/* Desktop split view: the pinned source panel docks right and the page (incl. sticky top bar) narrows beside it. */
+:root { --source-w: clamp(380px, 40vw, 720px); }
+body.source-pinned { padding-right: var(--source-w); }
+.drawer.docked { width: var(--source-w); z-index: 30; box-shadow: none; }
+.drawer.docked:focus:not(:focus-visible) { outline: none; }
+@media (max-width: 640px) {
+  .topbar-actions .icon-btn, .topbar-actions .pill { min-width: 44px; min-height: 44px; justify-content: center; }
+}
+
+/* ── Lesson (audit) ── */
+.question { scroll-margin-top: 120px; scroll-margin-bottom: 1rem; }
+details.outline { margin-top: 0.2rem; }
+details.outline > summary { cursor: pointer; color: var(--text-2); font-weight: 500; padding: 0.15rem 0; width: fit-content; }
+details.outline[open] > summary { margin-bottom: 0.4rem; }
+details.history { border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); padding: 0.55rem 0.9rem; }
+details.history > summary { cursor: pointer; line-height: 1.8; }
+details.history > summary .kicker { margin-right: 0.3rem; }
+details.history .history-body { display: flex; flex-direction: column; gap: 1.6rem; margin: 1rem 0 0.4rem; }
+.next-step { margin: 0.35rem 0 0; color: var(--text-2); }
+.legend { display: grid; grid-template-columns: max-content 1fr; gap: 0.35rem 0.8rem; margin: 0.6rem 0; font-size: 0.875rem; align-items: baseline; }
+.legend dt { margin: 0; }
+.legend dd { margin: 0; color: var(--text-2); }
+.drawer-body > details.expand { margin: 0 0 1rem; font-size: 0.9rem; }
+.intro h2 { margin: 0.2rem 0 0.4rem; }
+.intro p { margin: 0.4rem 0; }
+.jump-question { position: fixed; right: 1rem; bottom: 1rem; z-index: 25; box-shadow: 0 4px 16px rgba(20, 20, 30, 0.18); }
+body.source-pinned .jump-question { right: calc(var(--source-w) + 1rem); }
+@media (max-width: 640px) {
+  .jump-question { left: 1rem; right: 1rem; justify-content: center; }
+  .legend { grid-template-columns: 1fr; }
+}
+/* Very narrow phones: the provider pill collapses to its status dot (label stays for screen readers). */
+@media (max-width: 400px) {
+  .topbar-actions .pill .pill-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .topbar-actions .pill { padding: 0; }
+}
+
+/* ── Exam practice ── */
+.practice .grow, .dialog .grow { flex: 1 1 auto; min-width: 0; }
+.spinner.inline { display: inline-block; width: 12px; height: 12px; border-width: 2px; vertical-align: -1px; flex: none; }
+.banner.info { background: var(--info-weak); border: 1px solid var(--border); }
+.banner.small { font-size: 0.875rem; }
+.btn.danger { background: var(--bad); border-color: var(--bad); color: #fff; }
+:root[data-theme="dark"] .btn.danger { color: #10131c; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .btn.danger { color: #10131c; } }
+.back-link { color: var(--accent-text); text-decoration: none; font-weight: 500; }
+.back-link:hover { text-decoration: underline; }
+.crumb-link { color: var(--text-2); font-weight: 600; text-decoration: none; }
+.crumb-link:hover { text-decoration: underline; }
+.confirm { margin-top: 0.7rem; padding: 0.7rem 0.85rem; border-radius: 9px; border: 1px solid color-mix(in srgb, var(--warn) 35%, var(--border)); background: var(--warn-weak); }
+.confirm p { margin: 0 0 0.5rem; font-size: 0.92rem; }
+
+/* Course card */
+.practice-area { margin-top: 0.8rem; padding-top: 0.6rem; border-top: 1px solid var(--border); }
+.practice-area > h4 { margin: 0 0 0.2rem; }
+.practice-row:first-of-type { border-top: none; }
+.practice-row .practice-status { display: inline-flex; align-items: center; gap: 0.35rem; flex-wrap: wrap; }
+.practice-row .form-error { margin: 0.15rem 0 0; }
+
+/* Setup dialog */
+.practice-setup .field { display: block; margin: 0.8rem 0 0; }
+.practice-setup .field-label { display: block; font-weight: 600; font-size: 0.9rem; margin-bottom: 0.25rem; }
+.practice-setup .banner { margin-top: 0.7rem; }
+.suggestions { border: none; padding: 0; margin: 0.4rem 0 0; display: flex; flex-direction: column; gap: 0.4rem; min-width: 0; }
+.suggestions legend { padding: 0; margin-bottom: 0.3rem; }
+.suggestions .option input { flex: none; margin: 0.3rem 0 0; }
+.suggestions .option .label { min-width: 0; overflow-wrap: anywhere; }
+
+/* Set page */
+.practice h1 { overflow-wrap: anywhere; }
+.key-note { margin: -0.3rem 0 1rem; }
+.practice-progress { margin: 1rem 0 0; }
+.meter { height: 6px; border-radius: 999px; background: var(--surface-2); overflow: hidden; margin-top: 0.7rem; }
+.meter > div { height: 100%; background: var(--accent); transition: width 0.4s ease; }
+@media (prefers-reduced-motion: reduce) { .meter > div { transition: none; } }
+.problem-list { list-style: none; padding: 0; margin: 0; }
+.problem-list li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.15rem 0.6rem; padding: 0.65rem 0; border-top: 1px solid var(--border); }
+.problem-list li:first-child { border-top: none; }
+.problem-link { flex: 1 1 100%; display: flex; flex-direction: column; text-decoration: none; min-width: 0; }
+.problem-number { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); font-weight: 600; }
+.problem-title { font-weight: 600; color: var(--accent-text); overflow-wrap: anywhere; }
+.problem-link:hover .problem-title { text-decoration: underline; }
+.pending-problems { font-style: italic; }
+.danger-zone { margin-top: 2.5rem; padding-top: 1rem; border-top: 1px solid var(--border); }
+
+/* Problem page */
+.problem-nav { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+.problem-nav.bottom { margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--border); }
+.problem-intro { margin: 0.2rem 0 0.6rem; }
+.practice .prose { overflow-wrap: anywhere; }
+.practice .prose table { display: block; max-width: 100%; overflow-x: auto; }
+.ref-groups { display: flex; flex-direction: column; gap: 0.35rem; margin: 0.4rem 0 0.4rem; }
+.ref-groups .provenance { margin-top: 0; }
+.ref-groups .kicker { margin-right: 0.15rem; }
+.steps { margin-top: 1.4rem; }
+.problem-summary { margin-top: 1.6rem; }
+.problem-summary h2 { margin: 0 0 0.3rem; }
+.problem-summary h3 { margin: 0.8rem 0 0.2rem; }
+.revisit { list-style: none; padding: 0; margin: 0; }
+.revisit li { display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap; padding: 0.35rem 0; border-top: 1px solid var(--border); }
+.revisit li:first-child { border-top: none; }
+.revisit .grow { flex: 1 1 10rem; min-width: 0; }
+
+/* Step card */
+.step { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem 1.15rem 1.1rem; box-shadow: var(--shadow); min-width: 0; scroll-margin-top: 120px; }
+.step-head { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+.step-label { font-size: 1.1rem; margin: 0.15rem 0 0.2rem; overflow-wrap: anywhere; }
+.step-label:focus:not(:focus-visible) { box-shadow: none; }
+.step-prompt { min-width: 0; }
+.step-prompt .prose p:first-child { margin-top: 0.2em; }
+.step-tools { margin: 0.1rem 0 0.2rem; gap: 0.3rem; }
+.hint-box { margin: 0.4rem 0 0.8rem; }
+.hint-box .prose { font-size: 0.97rem; }
+.step-answer { margin-top: 0.6rem; min-width: 0; }
+.step-answer .badge { margin-bottom: 0.4rem; }
+.answer-label { display: block; font-weight: 600; font-size: 0.9rem; margin-bottom: 0.3rem; }
+.answer-line { display: flex; align-items: center; gap: 0.5rem; max-width: 26rem; }
+.answer-line .answer-input { flex: 1 1 auto; min-width: 0; font-family: var(--font-mono); }
+.answer-line .unit { color: var(--text-2); flex: none; }
+.step-answer > .hint { margin-top: 0.3rem; }
+.option:has(input:focus-visible) { box-shadow: var(--focus); }
+.option:has(input:disabled) { cursor: default; }
+.feedback.warn { background: var(--warn-weak); }
+.feedback.pending { background: var(--info-weak); }
+.feedback .verdict { margin: 0 0 0.25rem; }
+.feedback .verdict:focus:not(:focus-visible) { box-shadow: none; }
+.feedback .working { margin: 0.3rem 0; align-items: flex-start; }
+.feedback .working .spinner { margin-top: 0.2rem; flex: none; }
+.feedback .working .grow { flex: 1; min-width: 0; }
+.verdict-icon { display: inline-block; min-width: 1em; text-align: center; font-weight: 700; }
+.feedback.good .verdict-icon, .verdict-icon.good { color: var(--good); }
+.feedback.bad .verdict-icon, .verdict-icon.bad { color: var(--bad); }
+.feedback.warn .verdict-icon, .verdict-icon.warn { color: var(--warn); }
+.answer-compare { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 0.25rem 0.8rem; margin: 0.6rem 0 0; }
+.answer-compare dt { color: var(--text-2); font-size: 0.85rem; padding-top: 0.1rem; }
+/* Tinted feedback panels: --muted is too faint on them (contrast), so secondary text uses --text-2. */
+.step .feedback .muted { color: var(--text-2); }
+.answer-compare dd { margin: 0; overflow-wrap: anywhere; font-family: var(--font-mono); font-size: 0.95rem; }
+.answer-compare dd .prose, .answer-compare dd.free-answer { font-family: var(--font-read); }
+.free-answer { white-space: pre-wrap; }
+details.solution > summary { font-weight: 600; }
+details.solution .prose { margin-top: 0.3rem; }
+.step-actions { margin-top: 0.8rem; gap: 0.5rem; }
+.step-decision { margin: 0.8rem 0 0; padding: 0.25rem 0 0.6rem; }
+.step-decision .step-actions { margin-top: 0; }
+.step-decision .hint { margin: 0.45rem 0 0; }
+.feedback-answer { margin-top: 0.6rem; }
+.feedback-answer .answer-compare:empty { display: none; }
+.keyboard-help { margin-top: 0.7rem; color: var(--muted); }
+.keyboard-help > summary { cursor: pointer; width: fit-content; }
+.keyboard-help[open] > summary { margin-bottom: 0.35rem; }
+.lesson-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 0.65rem; }
+.question-details { margin-top: 0.75rem; }
+.question-details > summary { cursor: pointer; color: var(--text-2); }
+.question-details[open] > summary { margin-bottom: 0.4rem; }
+@media (max-width: 640px) {
+  .step-decision .btn, .step-form .controls > .btn, .lesson-actions .btn { min-height: 44px; }
+  .step .segmented button, .question .controls .segmented button, .question .controls > .btn { min-height: 44px; }
+  .step-decision .step-actions { gap: 0.5rem; }
+  .problem-nav .btn { min-height: 40px; }
+}
+.learn-pick { display: contents; }
+.learn-list { flex-basis: 100%; display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; }
+.learn-list[hidden] { display: none; }
+.learn-error { flex-basis: 100%; margin: 0; }
+details.history.attempts { margin-top: 0.9rem; padding: 0.45rem 0.8rem; }
+.attempt-list { margin: 0.5rem 0 0.2rem; padding-left: 1.3em; display: flex; flex-direction: column; gap: 0.35rem; font-size: 0.92rem; overflow-wrap: anywhere; }
+
+/* Answer tables: compact cells, horizontal scroll inside their own box on narrow screens */
+/* position: relative keeps the cells' absolutely positioned sr-only text inside the scroll box (else it widens the page). */
+.grid-scroll { overflow-x: auto; max-width: 100%; padding: 2px 2px 4px; position: relative; }
+.answer-grid { border-collapse: collapse; font-size: 0.92rem; background: var(--surface); }
+.answer-grid caption { caption-side: top; text-align: left; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); font-weight: 600; padding-bottom: 0.3rem; }
+.answer-grid th, .answer-grid td { border: 1px solid var(--border); text-align: center; min-width: 3rem; height: 2.3rem; }
+.answer-grid th { background: var(--surface-2); padding: 0.25rem 0.55rem; font-weight: 600; white-space: nowrap; color: var(--text-2); }
+.answer-grid td { padding: 0.25rem 0.55rem; font-family: var(--font-mono); white-space: nowrap; }
+.answer-grid td.corner { border-top-color: transparent; border-left-color: transparent; background: transparent; }
+.answer-grid td.cell-input { padding: 0; }
+.answer-grid td.given { background: var(--surface-2); color: var(--text-2); }
+.answer-grid input[type="text"] { width: 5.2em; min-width: 0; border: none; border-radius: 0; background: transparent; text-align: center; padding: 0.45rem 0.25rem; font-family: var(--font-mono); font-size: 0.92rem; }
+.answer-grid input[type="text"]:focus-visible, .answer-grid input[type="text"]:focus { outline: none; box-shadow: inset 0 0 0 2px var(--accent); border-radius: 0; background: var(--accent-weak); }
+.answer-grid input[type="text"]:disabled { opacity: 0.6; }
+.answer-grid td.right { background: var(--good-weak); }
+.answer-grid td.wrong { background: repeating-linear-gradient(135deg, var(--bad-weak) 0 5px, var(--surface) 5px 10px); box-shadow: inset 0 0 0 2px var(--bad); }
+.answer-grid td.fix { font-weight: 700; box-shadow: inset 0 -3px 0 var(--bad); }
+.answer-grid .cell-mark { margin-left: 0.3rem; font-weight: 700; font-family: var(--font-ui); }
+.answer-grid td.right .cell-mark { color: var(--good); }
+.answer-grid td.wrong .cell-mark { color: var(--bad); }
+.grid-help { margin-top: 0.35rem; }
+.grid-compare { display: flex; flex-wrap: wrap; gap: 1rem 1.5rem; margin-top: 0.7rem; align-items: flex-start; }
+.grid-compare > * { min-width: 0; max-width: 100%; }
+
+@media (max-width: 640px) {
+  .step { padding: 0.9rem 0.85rem 1rem; }
+  .answer-compare { grid-template-columns: minmax(0, 1fr); gap: 0.1rem; }
+  .answer-compare dd { margin-bottom: 0.4rem; }
+  .step .controls { gap: 0.6rem 0.8rem; }
+}
+
+/* Guided practice: locked steps, the warm-up and coaching after a miss */
+.step.locked { background: var(--surface-2); box-shadow: none; padding-top: 0.7rem; padding-bottom: 0.7rem; }
+.step.locked .step-label { font-size: 1rem; color: var(--text-2); margin-bottom: 0; }
+.locked-note { margin: 0.15rem 0 0; }
+.primer { margin-top: 1.2rem; min-width: 0; }
+.primer h2 { margin: 0; font-size: 1.15rem; }
+.primer .row { gap: 0.5rem; flex-wrap: wrap; align-items: center; }
+.primer .probe { margin-top: 0.9rem; min-width: 0; }
+.primer .why { margin: 0 0 0.4rem; overflow-wrap: anywhere; }
+.primer .question { box-shadow: none; }
+details.teach { margin-top: 0.6rem; }
+details.teach > summary { font-weight: 600; }
+.guide-state { display: flex; flex-wrap: wrap; gap: 0.5rem 0.8rem; align-items: center; margin: 0.5rem 0; }
+.guide-state > p { margin: 0; flex: 1 1 14rem; min-width: 0; }
+.guide-state .working .grow { flex: 1; min-width: 0; }
+.guide-state .form-error { flex-basis: 100%; margin: 0; }
+.coach { margin-top: 1rem; border-top: 1px solid var(--border); padding-top: 0.8rem; min-width: 0; }
+.coach-title { font-size: 1.02rem; margin: 0 0 0.4rem; }
+.coach-part { margin: 0.5rem 0 0.7rem; min-width: 0; overflow-wrap: anywhere; }
+.coach h4.kicker, .primer h4.kicker { margin: 0 0 0.15rem; font-size: 0.72rem; }
+.coach-example { border-color: var(--accent); overflow-wrap: anywhere; }
+.coach .question { box-shadow: none; margin-top: 0.6rem; }
+.coach-next { border-color: var(--good); }
+details.coach.earlier { margin-top: 0.8rem; padding: 0.45rem 0.8rem; border-top: none; }
+details.coach.earlier > summary { font-weight: 600; }
+.coach-recall { margin-top: 0.6rem; }
+.offer-solution { margin: 0.8rem 0 0; padding: 0.5rem 0.75rem; border-radius: 9px; background: var(--info-weak); }
+@media (max-width: 640px) {
+  .primer { padding: 0.9rem 0.85rem 1rem; }
+  .coach .question, .primer .question { padding: 0.8rem 0.75rem 0.9rem; }
+}
+
+/* Live preview of text being written (replaced in place by the validated block). */
+.writing { display: inline-flex; align-items: center; gap: 0.35rem; margin-left: 0.4rem; font-weight: 400; text-transform: none; letter-spacing: 0; color: var(--muted); font-size: 0.8rem; }
+.writing-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); animation: writing-pulse 1.2s ease-in-out infinite; }
+@keyframes writing-pulse { 0%, 100% { opacity: 0.25; } 50% { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .writing-dot { animation: none; opacity: 0.7; } }
+.revising { margin: 0.4rem 0; }
+
+/* Compact coaching: the core idea first; the full explanation one click away. */
+.coach-core { border-left: 3px solid var(--accent); padding-left: 0.8rem; }
+details.coach-full { margin-top: 0.9rem; }
+details.coach-full[open] > summary { margin-bottom: 0.4rem; }
+
+/* Follow-up questions: a thread of question → answer, then the box to ask the next one. */
+.followup { margin: 0.9rem 0 0.2rem; min-width: 0; }
+.followup.collapsed { margin: 0.6rem 0 0; }
+.fu-thread { list-style: none; margin: 0 0 0.6rem; padding: 0; display: grid; gap: 0.7rem; }
+.fu-turn { min-width: 0; }
+.fu-q { background: var(--surface-2); border-radius: 9px; padding: 0.45rem 0.7rem; overflow-wrap: anywhere; }
+.fu-q .kicker { font-size: 0.68rem; }
+.fu-q p { margin: 0.1rem 0 0; white-space: pre-wrap; }
+.fu-a { border-left: 3px solid var(--accent); padding: 0.15rem 0 0.15rem 0.8rem; margin-top: 0.4rem; min-width: 0; overflow-wrap: anywhere; }
+.fu-a > :first-child { margin-top: 0.2rem; }
+.fu-a .provenance { margin-top: 0.3rem; }
+.fu-form textarea { min-height: 3.2rem; }
+.fu-actions { margin-top: 0.35rem; gap: 0.5rem; align-items: center; }
+.fu-actions .grow { flex: 1 1 10rem; min-width: 0; }
+.fu-form .form-error { margin: 0.35rem 0 0; }
+
+/* Skeletons: where generated content will appear, shaped like it, before its text arrives. */
+.skeleton-lines { display: grid; gap: 0.55rem; margin: 0.5rem 0 0.4rem; }
+.skeleton-line { display: block; height: 0.8rem; border-radius: 6px; background: linear-gradient(90deg, var(--border) 0%, var(--surface-2, var(--border)) 50%, var(--border) 100%); background-size: 200% 100%; animation: skeleton-shimmer 1.6s ease-in-out infinite; opacity: 0.7; }
+.skeleton-option { cursor: default; align-items: center; min-height: 2.6rem; pointer-events: none; border-color: var(--border) !important; }
+.skeleton-option .skeleton-line { flex: 1 1 auto; max-width: 70%; }
+.question.preview .stem { min-height: 3.2rem; }
+.block.preview.skeleton { min-height: 9rem; }
+@keyframes skeleton-shimmer { 0% { background-position: 100% 0; } 100% { background-position: -100% 0; } }
+@media (prefers-reduced-motion: reduce) { .skeleton-line { animation: none; } }
+.elapsed { font-variant-numeric: tabular-nums; }
+.reading-status { margin: 0.4rem 0 0.2rem; padding: 0.6rem 0.8rem; border: 1px dashed var(--border); border-radius: 9px; }
+.reading-status .working { font-size: 0.9rem; }
+.reading-status .overview-preview { margin-top: 0.4rem; font-size: 0.92rem; color: var(--text-2); max-height: 14rem; overflow: hidden; }
+
+/* Folded warm-up and the problem's data beside the open step */
+.primer-done > summary,
+.step-setup > summary {
+  cursor: pointer;
+  color: var(--muted, inherit);
+  font-size: 0.9rem;
+  padding: 0.4rem 0;
+}
+.step-setup {
+  border-left: 3px solid var(--border, #ccc);
+  padding: 0 0.75rem 0.25rem;
+  margin: 0 0 0.75rem;
+  overflow-x: auto;
 }

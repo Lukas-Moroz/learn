@@ -32,6 +32,54 @@ export const MARKOV_LECTURE: string[][] = [
   ["Summary", "Chain rule (exact) plus a limited-memory assumption gives tractable sequence models."],
 ];
 
+// Exam practice: a two-problem study guide, its solutions, and a lecture that teaches both.
+export const PRACTICE_GUIDE: string[][] = [
+  ["Practice Exam (demo)", "Two worked problems on edit distance and entropy."],
+  [
+    "Problem 1: Edit distance",
+    "Let X = GCA and Y = GAC. Insertion, deletion and substitution cost 1.",
+    "(a) Complete the matrix D, including the boundary row and column.",
+    "(b) Report the edit distance.",
+    "(c) Explain what the three candidates in the recurrence represent.",
+  ],
+  [
+    "Problem 2: Entropy",
+    "A source emits a and b with probability 1/4 each,",
+    "and c, d, e and f with probability 1/8 each.",
+    "(a) Give the self-information of each symbol.",
+    "(b) Compute the entropy H(X).",
+    "(c) Compute the entropy of a uniform source on six symbols.",
+    "(d) Which source has the greater entropy?",
+  ],
+];
+
+export const PRACTICE_SOLUTIONS: string[][] = [
+  ["Practice Exam (demo): Solutions"],
+  [
+    "Problem 1: Edit distance",
+    "The complete matrix has rows eps, G, C, A and columns eps, G, A, C.",
+    "Rows: 0 1 2 3 / 1 0 1 2 / 2 1 1 1 / 3 2 1 2.",
+    "The edit distance is D(3,3) = 2.",
+    "The candidates delete X_i, insert Y_j, or match or substitute.",
+  ],
+  [
+    "Problem 2: Entropy",
+    "Self-information: a and b carry 2 bits; c, d, e and f carry 3 bits.",
+    "H(X) = 2(1/4)(2) + 4(1/8)(3) = 2.5 bits.",
+    "The uniform source has entropy log2 6 = 2.585 bits, which is greater.",
+  ],
+];
+
+/** Page 6 imitates text extracted with a dropped "fi" ligature ("Suf x" for "Suffix"). */
+export const ALIGNMENT_LECTURE: string[][] = [
+  ["Lecture 5: Alignment and information", "Computational Genomics"],
+  ["Edit distance", "The Levenshtein edit distance counts insertions, deletions and substitutions."],
+  ["Edit distance by dynamic programming", "D(i,j) is the minimum of three candidates: delete, insert, or match/substitute.", "Fill the table row by row, starting from the empty prefixes."],
+  ["Self-information", "I(E) = -log2 P(E): rare events carry more information."],
+  ["Entropy", "Entropy is expected self-information: H(X) = -sum p(x) log2 p(x).", "A uniform source has the maximum entropy."],
+  ["Suf x arrays", "A suf x array lists the starting positions of the sorted suf xes."],
+];
+
 export async function makePdf(pages: string[][]): Promise<Uint8Array> {
   const doc = await PDFDocument.create();
   const font = await doc.embedFont(StandardFonts.Helvetica);

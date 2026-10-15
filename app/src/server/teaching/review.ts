@@ -60,7 +60,7 @@ export function answerReview(repo: Repo, questionId: string, raw: unknown, now =
       attempt.id,
       evidenceFromAttempt({ kind: q.kind, context: q.context, purpose: "review", correct: g.correct, confidence: attempt.confidence, reasoning: null }, now.toISOString()),
     );
-    for (const m of g.misconceptions) repo.recordMisconception(q.concept_id, m, null, attempt.confidence);
+    for (const m of new Set(g.misconceptions)) repo.recordMisconception(q.concept_id, m, null, attempt.confidence, { kind: "lesson", id: attempt.id });
     const m = computeMastery(q.concept_id, repo.evidenceFor(q.concept_id), { central: false, activeMisconceptions: repo.activeMisconceptions(q.concept_id), now });
     return {
       attempt: attemptView(q, attempt),

@@ -6,15 +6,22 @@ import { parsePromptInput } from "../../ai/prompts.ts";
 import { primaryDimension } from "../../../shared/mastery.ts";
 import { ProviderError, type AIProvider, type ProviderStatus, type StreamRequest } from "../types.ts";
 import { CURRICULUM, findFixture, slugify, type FixtureConcept } from "./curriculum.ts";
+import { followUp } from "./followup.ts";
+import { gradePractice, practiceCoach, practiceCoachCheck, practiceOutline, practicePrimer, practiceProblem } from "./practice.ts";
 
-export type InjectedFailure = { task?: string; kind: "interrupt" | "usage_limit" | "invalid" | "billing_risk"; afterChars?: number };
+/** "mutate" rewrites the fixture before it is sent (e.g. to produce a malformed table that must be repaired). */
+export type InjectedFailure = { task?: string; kind: "interrupt" | "usage_limit" | "invalid" | "billing_risk" | "mutate"; afterChars?: number; mutate?: (out: any) => unknown };
 
 export class MockProvider implements AIProvider {
   readonly id = "mock" as const;
   readonly calls: { task: string; input: any }[] = [];
   private failures: InjectedFailure[] = [];
   /** Simulated per-chunk latency, to make streaming visible in the UI during development. */
-  constructor(private readonly chunkDelayMs = 0) {}
+  constructor(
+    private readonly chunkDelayMs = 0,
+    /** Simulated wait before the first token (a real model thinks first), for measuring perceived latency. */
+    private readonly firstTokenMs = 0,
+  ) {}
 
   failNext(f: InjectedFailure) {
     this.failures.push(f);
@@ -36,13 +43,23 @@ export class MockProvider implements AIProvider {
     if (failure?.kind === "usage_limit") throw new ProviderError("usage_limit", "Mock usage limit reached", false, { usageUrl: "https://example.invalid/usage" });
     if (failure?.kind === "billing_risk") throw new ProviderError("billing_risk", "Mock billing risk");
 
-    let text = JSON.stringify(respond(task, input));
+    let out = respond(task, input);
+    if (failure?.kind === "mutate" && failure.mutate) out = failure.mutate(structuredClone(out));
+    let text = JSON.stringify(out);
     if (failure?.kind === "invalid") text = text.slice(0, Math.floor(text.length / 2));
     const stopAt = failure?.kind === "interrupt" ? Math.min(failure.afterChars ?? 200, text.length - 1) : text.length;
+    if (this.firstTokenMs) {
+      await new Promise<void>((resolve, reject) => {
+        const t = setTimeout(resolve, this.firstTokenMs);
+        req.signal?.addEventListener("abort", () => (clearTimeout(t), reject(new ProviderError("cancelled", "Cancelled"))), { once: true });
+      });
+    }
     let sent = 0;
+    // With a delay (development, `LEARN_PROVIDER=mock`), small chunks so live previews visibly grow.
+    const size = this.chunkDelayMs ? 24 : 160;
     while (sent < stopAt) {
       if (req.signal?.aborted) throw new ProviderError("cancelled", "Cancelled");
-      const chunk = text.slice(sent, Math.min(sent + 160, stopAt));
+      const chunk = text.slice(sent, Math.min(sent + size, stopAt));
       sent += chunk.length;
       req.onDelta?.(chunk);
       await new Promise((r) => (this.chunkDelayMs ? setTimeout(r, this.chunkDelayMs) : setImmediate(r)));
@@ -66,6 +83,20 @@ export function respond(task: string, input: any): unknown {
       return question(input);
     case "evaluate_reasoning":
       return evaluate(input);
+    case "practice_outline":
+      return practiceOutline(input);
+    case "practice_problem":
+      return practiceProblem(input);
+    case "grade_practice":
+      return gradePractice(input);
+    case "practice_primer":
+      return practicePrimer(input);
+    case "practice_coach":
+      return practiceCoach(input);
+    case "practice_coach_check":
+      return practiceCoachCheck(input);
+    case "follow_up":
+      return followUp(input);
     default:
       throw new ProviderError("unsupported", `mock has no responder for ${task}`);
   }

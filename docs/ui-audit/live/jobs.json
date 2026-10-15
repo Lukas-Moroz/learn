@@ -1,0 +1,62 @@
+[
+  {
+    "id": "45f46f39-0541-4f34-8fb8-aef33f87482d",
+    "lesson_id": null,
+    "task": "plan_objective",
+    "status": "completed",
+    "provider": "openai",
+    "created_at": "2026-10-08T20:11:52.674Z",
+    "finished_at": "2026-10-08T20:12:08.747Z",
+    "error_json": null,
+    "characters": 2691,
+    "durationSeconds": 16.07
+  },
+  {
+    "id": "c7e34b45-3970-4bd9-b615-388bd87cebc6",
+    "lesson_id": "7a44f887-4846-430b-92dc-34e7055b32a4",
+    "task": "question",
+    "status": "completed",
+    "provider": "openai",
+    "created_at": "2026-10-08T20:12:37.835Z",
+    "finished_at": "2026-10-08T20:12:57.960Z",
+    "error_json": null,
+    "characters": 2014,
+    "durationSeconds": 20.12
+  },
+  {
+    "id": "a0a98c13-191b-46b0-999d-c7eacdaeb0de",
+    "lesson_id": "7a44f887-4846-430b-92dc-34e7055b32a4",
+    "task": "explain",
+    "status": "completed",
+    "provider": "openai",
+    "created_at": "2026-10-08T20:12:58.755Z",
+    "finished_at": "2026-10-08T20:13:23.306Z",
+    "error_json": null,
+    "characters": 3917,
+    "durationSeconds": 24.55
+  },
+  {
+    "id": "b32efab4-e1b7-4078-8d35-8bd5dab711b5",
+    "lesson_id": "7a44f887-4846-430b-92dc-34e7055b32a4",
+    "task": "question",
+    "status": "completed",
+    "provider": "openai",
+    "created_at": "2026-10-08T20:13:23.314Z",
+    "finished_at": "2026-10-08T20:13:41.962Z",
+    "error_json": null,
+    "characters": 1667,
+    "durationSeconds": 18.65
+  },
+  {
+    "id": "b2fc7d69-2c1d-48d3-a46e-ec9006065c36",
+    "lesson_id": "7a44f887-4846-430b-92dc-34e7055b32a4",
+    "task": "evaluate_reasoning",
+    "status": "completed",
+    "provider": "openai",
+    "created_at": "2026-10-08T20:14:14.740Z",
+    "finished_at": "2026-10-08T20:14:49.325Z",
+    "error_json": null,
+    "characters": 299,
+    "durationSeconds": 34.59
+  }
+]

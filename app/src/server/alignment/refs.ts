@@ -1,7 +1,9 @@
 // Source alignment: model-written citations are checked against the stored page
 // text before they are shown. Refs to pages that don't exist are dropped; quotes
-// that don't appear on the cited page are removed. Content left without a verified
-// ref is labelled supplementary, never presented as coming from the document.
+// that don't appear on the cited page are removed. A page number alone proves
+// nothing about where content came from, so content is labelled "source" only
+// when a quote was found on its page; otherwise it is supplementary, and any
+// page-only refs are kept as pointers to related pages.
 import type { Repo } from "../db/repo.ts";
 import type { Provenance, SourceRef } from "../../shared/schemas.ts";
 
@@ -59,8 +61,12 @@ export function validateRefs(
   return { refs: out, dropped };
 }
 
+/**
+ * "source" needs at least one ref whose quote was found on its page (validateRefs keeps only such
+ * quotes). `verified` alone means the page exists, which doesn't show the content came from it.
+ */
 export function provenanceFor(refs: SourceRef[]): Provenance {
-  return refs.some((r) => r.verified) ? "source" : "supplementary";
+  return refs.some((r) => r.verified && Boolean(r.quote)) ? "source" : "supplementary";
 }
 
 /** The first contiguous run of pages: [8,9,10,12] → 8–10. Never implies pages that weren't cited. */

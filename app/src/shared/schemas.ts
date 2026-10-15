@@ -252,6 +252,8 @@ export interface QuestionView {
   multiSelect: boolean;
   difficulty: number;
   attempt?: AttemptView;
+  /** Set aside in this lesson without an answer or any mastery credit. */
+  skipped?: boolean;
 }
 
 export interface AttemptView {

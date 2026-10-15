@@ -11,15 +11,17 @@ export interface Shell {
 export const ShellContext = createContext<Shell>(null as unknown as Shell);
 export const useShell = () => useContext(ShellContext);
 
+export const providerName = (id: string) => (id === "mock" ? "Demo mode" : id === "openai" ? "ChatGPT plan" : id === "claude" ? "Claude subscription" : id);
+
 export function ProviderPill() {
   const { status, openSettings } = useShell();
   if (!status) return null;
   const active = status.providers.find((p) => p.id === status.active);
   const cls = status.paused ? "bad" : active?.ready ? "ok" : "warn";
-  const label = status.paused ? "Paused" : active ? (active.id === "mock" ? "Mock" : active.id === "openai" ? "ChatGPT" : "Claude") : "No provider";
+  const label = status.paused ? "Paused" : active ? (active.id === "mock" ? "Demo mode" : active.id === "openai" ? "ChatGPT" : "Claude") : "No provider";
   return (
     <button className="pill" onClick={openSettings} title={status.paused?.reason ?? active?.message ?? ""} style={{ cursor: "pointer" }}>
-      <span className={`dot ${cls}`} /> {label}
+      <span className={`dot ${cls}`} aria-hidden /> <span className="pill-label">{label}</span>
     </button>
   );
 }
@@ -44,17 +46,17 @@ export function TopBar({ crumbs, children, progress }: { crumbs?: ReactNode; chi
             Concepts
           </a>
           <ProviderPill />
-          <button className="btn ghost small" onClick={cycleTheme} aria-label={`Theme: ${theme}. Change theme`} title={`Theme: ${theme}`}>
-            {theme === "dark" ? "☾" : theme === "light" ? "☀" : "◐"}
+          <button className="btn ghost small icon-btn" onClick={cycleTheme} aria-label={`Theme: ${theme}. Change theme`} title={`Theme: ${theme}`}>
+            <span aria-hidden>{theme === "dark" ? "☾" : theme === "light" ? "☀" : "◐"}</span>
           </button>
-          <button className="btn ghost small" onClick={openSettings} aria-label="Settings">
-            ⚙
+          <button className="btn ghost small icon-btn" onClick={openSettings} aria-label="Settings" title="Settings">
+            <span aria-hidden>⚙</span>
           </button>
         </nav>
       </div>
       {children}
       {progress !== undefined && (
-        <div className="progress" role="progressbar" aria-valuenow={Math.round(progress * 100)} aria-valuemin={0} aria-valuemax={100}>
+        <div className="progress" role="progressbar" aria-label="Lesson progress" aria-valuenow={Math.round(progress * 100)} aria-valuemin={0} aria-valuemax={100}>
           <div style={{ width: `${Math.round(progress * 100)}%` }} />
         </div>
       )}

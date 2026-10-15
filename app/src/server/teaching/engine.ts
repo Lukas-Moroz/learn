@@ -1,13 +1,13 @@
 // Teaching engine: executes planner actions, calls the AI only to produce content,
 // and persists everything (blocks, attempts, evidence, misconceptions, position) in
 // transactions. Generated content is committed only after it completes and validates.
-import type { Generator } from "../ai/generate.ts";
+import { hash, type GenerateOptions, type Generator } from "../ai/generate.ts";
 import { PROMPT_VERSION } from "../ai/prompts.ts";
 import { pageSpan, provenanceFor, validateRefs } from "../alignment/refs.ts";
 import type { LessonRow, QuestionRow, Repo, SourceRow } from "../db/repo.ts";
 import type { EventBus } from "../events.ts";
 import { prerequisiteChain, upsertConcepts, type PlannedConcept } from "../graph/concepts.ts";
-import { grade, normalizeOptions, optionShapeProblem, resolveCorrect, seededRandom, shuffle } from "../../shared/grading.ts";
+import { grade, hiddenOptionReference, normalizeOptions, optionShapeProblem, resolveCorrect, seededRandom, shuffle } from "../../shared/grading.ts";
 import { computeMastery, evidenceFromAttempt } from "../../shared/mastery.ts";
 import {
   AttemptInput,
@@ -20,6 +20,8 @@ import {
   type QuestionKind,
   type QuestionPurpose,
   type ReasoningEvaluation,
+  type Confidence,
+  type ExplanationContent,
   type SourceAnalysis,
   type Strategy,
 } from "../../shared/schemas.ts";
@@ -27,24 +29,47 @@ import { repetitionProblem } from "../../shared/similarity.ts";
 import { ProviderError } from "../providers/types.ts";
 import { buildCheckpoint } from "./checkpoint.ts";
 import { currentConcept, plan, shouldCheckpoint, type Action, type ConceptFacts, type HistoryEvent, type Snapshot } from "./planner.ts";
+import { Prefetcher } from "./prefetch.ts";
 
 const PAGE_CHARS = 1500;
 const ANALYSIS_CHARS = 60_000;
+/** Source text budget per generation request (chars), filled from the concept's pages and their neighbours. */
+const EXCERPT_CHARS = { explain: 4500, question: 3000 } as const;
 
 export class Engine {
   private locks = new Map<string, Promise<unknown>>();
+  /** Repeated banner/header lines per source (sources are immutable, so this never goes stale). */
+  private boilerplate = new Map<string, Set<string>>();
+  /** Content prepared ahead of the learner (the next explanation or question), revealed on Continue. */
+  readonly prefetch: Prefetcher;
 
   constructor(
     readonly repo: Repo,
     readonly gen: Generator,
     readonly bus: EventBus,
     private readonly now: () => Date = () => new Date(),
-  ) {}
+  ) {
+    this.prefetch = new Prefetcher(this);
+  }
+
+  /** Lessons with a mutation queued or running (advance, answer), by count. */
+  private active = new Map<string, number>();
+
+  /** Whether the lesson is being advanced or answered right now (its next step is not settled yet). */
+  isBusy(lessonId: string): boolean {
+    return (this.active.get(lessonId) ?? 0) > 0;
+  }
 
   /** Serialise all mutations of one lesson (double clicks, retries, two tabs). */
   private withLock<T>(lessonId: string, fn: () => Promise<T>): Promise<T> {
     const prev = this.locks.get(lessonId) ?? Promise.resolve();
-    const next = prev.catch(() => undefined).then(fn);
+    this.active.set(lessonId, (this.active.get(lessonId) ?? 0) + 1);
+    const release = () => {
+      const n = (this.active.get(lessonId) ?? 1) - 1;
+      if (n > 0) this.active.set(lessonId, n);
+      else this.active.delete(lessonId);
+    };
+    const next = prev.catch(() => undefined).then(fn).finally(release);
     this.locks.set(lessonId, next.catch(() => undefined));
     return next;
   }
@@ -58,17 +83,21 @@ export class Engine {
     let analysis = this.repo.getAnalysis(source.sha256, PROMPT_VERSION.analyze_source) as SourceAnalysis | undefined;
     if (!analysis) {
       const pages = this.repo.getPages(source.id);
-      const perPage = Math.max(300, Math.min(PAGE_CHARS, Math.floor(ANALYSIS_CHARS / Math.max(1, pages.length))));
       const known = this.repo.listConcepts().slice(0, 80).map((c) => c.name);
       const earlier = this.repo.listLectures(lecture.course_id).filter((l) => l.position < lecture.position).map((l) => l.title);
       analysis = await this.gen.run("analyze_source", {
         title: lecture.title,
         unit: source.unit,
         pageCount: pages.length,
-        pages: pages.map((text, i) => ({ page: i + 1, text: text.slice(0, perPage) })),
+        pages: analysisPages(pages, this.boilerplateFor(source.id, pages)),
         knownConcepts: known,
         previousLectures: earlier,
-      }, { lessonId: null });
+      }, {
+        lessonId: null,
+        // One-time and slow (about two minutes): the lecture's title and overview are shown as they are written.
+        meta: { lectureId },
+        preview: { fields: ["title", "overview"] },
+      });
       analysis = sanitizeAnalysis(analysis, source.page_count);
       this.repo.putAnalysis(source.sha256, PROMPT_VERSION.analyze_source, analysis);
     }
@@ -151,12 +180,15 @@ export class Engine {
         }
       }
     }
+    const active = this.repo.activeMisconceptions(conceptId);
     return {
       id: conceptId,
       name: concept.name,
       role,
       mastery: this.mastery(conceptId, role),
-      activeMisconceptions: this.repo.activeMisconceptions(conceptId).map((m) => m.label),
+      activeMisconceptions: active.map((m) => m.label),
+      misconceptionText: active.map((m) => `${m.label} ${m.description ?? ""}`).join(" "),
+      definition: concept.definition,
       prerequisites: this.repo.prerequisitesOf(conceptId),
       history,
       failedStrategies: this.repo.strategiesFor(conceptId).filter((s) => s.outcome === "failed").map((s) => s.strategy),
@@ -186,8 +218,10 @@ export class Engine {
    * Run planner actions until the learner has something to respond to (a question)
    * or two content blocks were produced. If generation fails, nothing from the
    * failed step is committed; earlier steps in this call remain (they completed).
+   * `pauseAfterExplanation`: stop once an explanation is committed (its question is then prepared
+   * in the background and revealed by the next Continue; see Prefetcher).
    */
-  advance(lessonId: string): Promise<{ created: Block[]; action: Action["type"] }> {
+  advance(lessonId: string, opts: { pauseAfterExplanation?: boolean } = {}): Promise<{ created: Block[]; action: Action["type"] }> {
     return this.withLock(lessonId, async () => {
       const created: Block[] = [];
       let lastAction: Action["type"] = "await_answer";
@@ -200,7 +234,10 @@ export class Engine {
         if (action.type === "await_answer" || (action.type === "complete" && lesson.state.complete)) break;
         const blocks = await this.execute(lesson, action);
         created.push(...blocks);
+        // Each committed block is shown right away (e.g. the explanation while its question is being written).
+        if (blocks.length) this.bus.publish({ type: "lesson", lessonId });
         if (blocks.some((b) => b.type === "question")) break;
+        if (opts.pauseAfterExplanation && blocks.some((b) => b.type === "explanation")) break;
         if (blocks.some((b) => b.type === "explanation" || b.type === "overview")) content++;
         if (content >= 2 || action.type === "complete") break;
       }
@@ -236,14 +273,15 @@ export class Engine {
             ref: span ? validateRefs(repo, source.id, [span], lectureTitle).refs[0] ?? null : null,
           };
         });
+        const refs = structure.map((s) => s.ref).filter((r): r is NonNullable<typeof r> => Boolean(r));
         return repo.tx(() => {
           const block = repo.appendBlock({
             lessonId: lesson.id,
             type: "overview",
             conceptId: null,
             payload: { ...analysis, structure, path, concepts: undefined },
-            refs: structure.map((s) => s.ref).filter(Boolean),
-            provenance: "supplementary",
+            refs,
+            provenance: provenanceFor(refs),
           });
           state.overviewShown = true;
           this.save(lesson, state);
@@ -313,11 +351,7 @@ export class Engine {
       case "detour": {
         const from = repo.getConcept(action.fromConceptId)!;
         const to = repo.getConcept(action.conceptId)!;
-        const returnPage = state.sourcePosition?.page ?? null;
-        state.detours.push({ conceptId: action.conceptId, reason: action.reason, fromConceptId: action.fromConceptId, returnTo: { conceptId: action.fromConceptId, page: returnPage } });
-        state.detourHistory.push(`${action.fromConceptId}>${action.conceptId}`);
-        state.conceptId = action.conceptId;
-        if (!state.roles[action.conceptId]) state.roles[action.conceptId] = "background";
+        const returnPage = applyDetour(state, action);
         return repo.tx(() => {
           const block = repo.appendBlock({
             lessonId: lesson.id,
@@ -341,12 +375,7 @@ export class Engine {
       }
 
       case "return": {
-        const frame = state.detours.pop()!;
-        const attemptsSoFar = this.facts(lesson, frame.fromConceptId).history.filter((h) => h.type === "attempt").length;
-        state.streakResets[frame.fromConceptId] = attemptsSoFar;
-        state.justReturned = { conceptId: frame.fromConceptId, fromDetour: frame.conceptId };
-        state.conceptId = frame.fromConceptId;
-        if (frame.returnTo.page && lesson.source_id) state.sourcePosition = { sourceId: lesson.source_id, page: frame.returnTo.page };
+        const frame = this.applyReturn(lesson, state);
         return repo.tx(() => {
           const block = repo.appendBlock({
             lessonId: lesson.id,
@@ -443,6 +472,11 @@ export class Engine {
 
   /** Move past a finished concept on the path; place a checkpoint at major transitions. */
   private advancePath(lesson: LessonRow, state: LessonState, conceptId: string): Block[] {
+    return this.stepPath(lesson, state, conceptId) ? [this.checkpoint(lesson, state)] : [];
+  }
+
+  /** The state change of moving past a concept on the path. Returns whether a checkpoint is due. */
+  private stepPath(lesson: LessonRow, state: LessonState, conceptId: string): boolean {
     if (!state.sinceCheckpoint.includes(conceptId)) state.sinceCheckpoint.push(conceptId);
     state.pathIndex += 1;
     state.conceptId = state.path[state.pathIndex] ?? null;
@@ -451,8 +485,50 @@ export class Engine {
       const page = this.conceptPages(lesson, next)[0];
       if (page) state.sourcePosition = { sourceId: lesson.source_id, page };
     }
-    const isLast = state.pathIndex >= state.path.length;
-    return shouldCheckpoint(state, isLast) ? [this.checkpoint(lesson, state)] : [];
+    return shouldCheckpoint(state, state.pathIndex >= state.path.length);
+  }
+
+  /** The state change of returning from a detour (pops its frame). */
+  private applyReturn(lesson: LessonRow, state: LessonState) {
+    const frame = state.detours.pop()!;
+    state.streakResets[frame.fromConceptId] = this.facts(lesson, frame.fromConceptId).history.filter((h) => h.type === "attempt").length;
+    state.justReturned = { conceptId: frame.fromConceptId, fromDetour: frame.conceptId };
+    state.conceptId = frame.fromConceptId;
+    if (frame.returnTo.page && lesson.source_id) state.sourcePosition = { sourceId: lesson.source_id, page: frame.returnTo.page };
+    return frame;
+  }
+
+  /**
+   * Look-ahead for prefetching: apply a move that generates nothing (overview, detour, return,
+   * advance) to `lesson.state` in memory only, exactly as executing it would. Returns false for
+   * moves it can't simulate. Nothing is written; a wrong guess only means the prepared content is
+   * not used (the reveal compares the real generation input with the prepared one).
+   */
+  simulate(lesson: LessonRow, action: Action): boolean {
+    const state = lesson.state;
+    switch (action.type) {
+      case "overview":
+        state.overviewShown = true;
+        return true;
+      case "detour":
+        applyDetour(state, action);
+        return true;
+      case "return":
+        if (!state.detours.length) return false;
+        this.applyReturn(lesson, state);
+        return true;
+      case "advance": {
+        const cur = currentConcept(state);
+        if (!cur) return false;
+        if (this.stepPath(lesson, state, cur)) {
+          state.sinceCheckpoint = [];
+          state.checkpointCount += 1;
+        }
+        return true;
+      }
+      default:
+        return false;
+    }
   }
 
   private checkpoint(lesson: LessonRow, state: LessonState): Block {
@@ -465,7 +541,7 @@ export class Engine {
 
   // ── Content generation ────────────────────────────────────────────────────
 
-  private lectureTitle(lesson: LessonRow): string | null {
+  lectureTitle(lesson: LessonRow): string | null {
     return lesson.lecture_id ? this.repo.getLecture(lesson.lecture_id)?.title ?? null : null;
   }
 
@@ -481,15 +557,26 @@ export class Engine {
     return this.repo.lectureConcepts(lesson.lecture_id).find((c) => c.concept_id === conceptId)?.pages ?? [];
   }
 
-  private sourceExcerpt(lesson: LessonRow, conceptId: string, max = 3) {
-    if (!lesson.source_id) return null;
-    const pages = this.conceptPages(lesson, conceptId).slice(0, max);
-    if (!pages.length) return null;
-    const source = this.repo.getSource(lesson.source_id)!;
-    return { unit: source.unit, pages: pages.map((p) => ({ page: p, text: (this.repo.getPage(source.id, p) ?? "").slice(0, PAGE_CHARS) })) };
+  private boilerplateFor(sourceId: string, pages: string[]): Set<string> {
+    let lines = this.boilerplate.get(sourceId);
+    if (!lines) this.boilerplate.set(sourceId, (lines = boilerplateLines(pages)));
+    return lines;
   }
 
-  private conceptInput(lesson: LessonRow, conceptId: string) {
+  /** The concept's source text, filled to a budget from its mapped pages and their neighbours (see excerptPages). */
+  sourceExcerpt(lesson: LessonRow, conceptId: string, budget: number) {
+    if (!lesson.source_id) return null;
+    const mapped = this.conceptPages(lesson, conceptId);
+    if (!mapped.length) return null;
+    const source = this.repo.getSource(lesson.source_id)!;
+    const all = this.repo.getPages(source.id);
+    const pages = excerptPages(all, mapped, budget, this.boilerplateFor(source.id, all));
+    if (pages.length) return { unit: source.unit, pages };
+    // Only figures/handwriting around this concept: say so, so the model neither invents slide content nor cites it.
+    return { unit: source.unit, pages, note: `The ${source.unit}s for this concept contain no extractable text (figures or handwriting), so there is nothing to quote: leave "refs" empty and don't describe what they show.` };
+  }
+
+  conceptInput(lesson: LessonRow, conceptId: string) {
     const c = this.repo.getConcept(conceptId)!;
     const ctx = lesson.course_id ? this.repo.contextsFor(conceptId).find((x) => x.course_id === lesson.course_id) : undefined;
     return { name: c.name, definition: c.definition, ...(ctx?.interpretation ? { interpretation: ctx.interpretation } : {}) };
@@ -508,7 +595,16 @@ export class Engine {
       }));
   }
 
-  private async generateExplanation(lesson: LessonRow, action: Extract<Action, { type: "explain" }>) {
+  private async generateExplanation(lesson: LessonRow, action: Extract<Action, { type: "explain" }>): Promise<ExplanationContent> {
+    const req = this.explanationRequest(lesson, action);
+    // Prepared ahead (prefetch) with exactly this input: use it (waiting for it if still being written).
+    const ready = await this.prefetch.claim(lesson.id, req.key);
+    if (ready) return ready as ExplanationContent;
+    return this.gen.run("explain", req.input, req.opts);
+  }
+
+  /** The explanation generation for a move: its input, options, and a key identifying both. */
+  explanationRequest(lesson: LessonRow, action: Extract<Action, { type: "explain" }>) {
     const f = this.facts(lesson, action.conceptId);
     const state = lesson.state;
     const frame = state.detours[state.detours.length - 1];
@@ -532,19 +628,37 @@ export class Engine {
       connectTo: f.prerequisites.map((p) => this.repo.getConcept(p)!.name).slice(0, 4),
       ...(frame && action.purpose === "detour" ? { detourReason: frame.reason, detourFor: this.repo.getConcept(frame.fromConceptId)!.name } : {}),
       ...(action.purpose === "return" && state.justReturned ? { connectTo: [this.repo.getConcept(state.justReturned.fromDetour)!.name] } : {}),
-      source: this.sourceExcerpt(lesson, action.conceptId),
+      source: this.sourceExcerpt(lesson, action.conceptId, EXCERPT_CHARS.explain),
     };
     const sourceSha = lesson.source_id ? this.repo.getSource(lesson.source_id)!.sha256 : null;
-    return this.gen.run("explain", input, {
+    const cacheKey = learnerSpecific ? undefined : ["explain", this.repo.getConcept(action.conceptId)!.slug, action.strategy, action.purpose, sourceSha];
+    const opts: GenerateOptions<ExplanationContent> = {
       lessonId: lesson.id,
+      // The learner reads the explanation as it is written; the block is committed only once it validates.
+      meta: { conceptId: action.conceptId },
+      preview: { fields: ["title", "body", "workedExample"] },
       // Reuse plain introductions across lessons; never cache learner-specific remediation.
-      cacheKey: learnerSpecific ? undefined : ["explain", this.repo.getConcept(action.conceptId)!.slug, action.strategy, action.purpose, sourceSha],
-    });
+      cacheKey,
+    };
+    return { task: "explain" as const, input, opts, key: hash(["explain", lesson.id, input, cacheKey ?? null]) };
   }
 
   private async generateQuestion(lesson: LessonRow, conceptId: string, kind: QuestionKind, context: "original" | "novel", difficulty: number, purpose: QuestionPurpose) {
+    const req = this.questionRequest(lesson, conceptId, kind, context, difficulty, purpose);
+    const ready = (await this.prefetch.claim(lesson.id, req.key)) as QuestionContent | null;
+    // Prepared with the same input; its checks run again against the state as it is now.
+    if (ready && !req.opts.check!(ready)) return ready;
+    return this.gen.run("question", req.input, req.opts);
+  }
+
+  /**
+   * The question generation for a move: input (with the anti-repetition context), options (with the
+   * deterministic checks), and a key identifying both. `explanation` stands in for the latest
+   * explanation block when it is not committed yet (prefetch look-ahead).
+   */
+  questionRequest(lesson: LessonRow, conceptId: string, kind: QuestionKind, context: "original" | "novel", difficulty: number, purpose: QuestionPurpose, explanation?: { body: string; workedExample?: string | null }) {
     const prior = this.repo.questionsForConcept(conceptId).map((q) => ({ text: `${q.stem} ${q.options.map((o) => o.label).join(" ")}`, scenario: q.scenario, stem: q.stem }));
-    const lastExplanation = [...this.repo.listBlocks(lesson.id)].reverse().find((b) => b.type === "explanation" && b.conceptId === conceptId);
+    const lastExplanation = explanation ? { payload: explanation } : [...this.repo.listBlocks(lesson.id)].reverse().find((b) => b.type === "explanation" && b.conceptId === conceptId);
     const explanationText = lastExplanation ? [lastExplanation.payload.body, lastExplanation.payload.workedExample ?? ""].join("\n") : null;
     const input = {
       concept: this.conceptInput(lesson, conceptId),
@@ -555,10 +669,13 @@ export class Engine {
       avoid: prior.slice(-12).map((p) => ({ stem: p.stem, scenario: p.scenario })),
       recentExplanation: explanationText,
       targetMisconceptions: this.repo.activeMisconceptions(conceptId).map((m) => m.label),
-      source: context === "original" ? this.sourceExcerpt(lesson, conceptId, 2) : null,
+      source: context === "original" ? this.sourceExcerpt(lesson, conceptId, EXCERPT_CHARS.question) : null,
     };
-    return this.gen.run("question", input, {
+    const opts: GenerateOptions<QuestionContent> = {
       lessonId: lesson.id,
+      meta: { conceptId },
+      // The stem is shown as it is written (it never contains the answer); options appear once validated.
+      preview: { fields: ["stem"] },
       check: (q) => {
         try {
           const options = normalizeOptions(q.options);
@@ -567,12 +684,17 @@ export class Engine {
           if (!q.multiSelect && correct.length !== 1) return "single-select questions need exactly one correct value";
           const shape = optionShapeProblem(options, correct);
           if (shape) return shape;
+          const hidden = hiddenOptionReference(q.explanation, options);
+          if (hidden) return `explanation ${hidden}`;
+          const hiddenData = scenarioDataProblem(q);
+          if (hiddenData) return hiddenData;
         } catch (e) {
           return (e as Error).message;
         }
         return repetitionProblem({ text: `${q.stem} ${q.options.map((o) => o.label).join(" ")}`, scenario: q.scenario }, prior, explanationText);
       },
-    });
+    };
+    return { task: "question" as const, input, opts, key: hash(["question", lesson.id, input]) };
   }
 
   private insertQuestion(lesson: LessonRow, conceptId: string, q: Omit<QuestionContent, "multiSelect"> & { multiSelect?: boolean }, purpose: QuestionPurpose, sourceQuestionId?: string) {
@@ -682,6 +804,8 @@ export class Engine {
         misconceptions: g.misconceptions,
         reasoning_status: reasoningStatus,
         reasoning,
+        // The answer's own time, shared with its evidence, misconceptions and resolutions.
+        created_at: at,
       });
       const role = lesson.state.roles[q.concept_id] ?? "background";
       const evidence = evidenceFromAttempt(
@@ -690,15 +814,18 @@ export class Engine {
       );
       repo.addEvidence(q.concept_id, lesson.course_id, attempt.id, evidence);
 
-      // Misconceptions: from the distractor chosen, and from written reasoning.
+      // One answer, one diagnosis: the reasoning evaluator's label (it read the learner's own words)
+      // when it names one, otherwise the misconception behind the distractor chosen.
       const recorded: string[] = [];
-      for (const m of g.misconceptions) {
-        repo.recordMisconception(q.concept_id, m, null, attempt.confidence);
-        recorded.push(m);
-      }
-      if (reasoning?.misconception && (reasoning.verdict === "flawed" || g.correct === false) && !recorded.includes(reasoning.misconception.label)) {
-        repo.recordMisconception(q.concept_id, reasoning.misconception.label, reasoning.misconception.description, attempt.confidence);
-        recorded.push(reasoning.misconception.label);
+      const fromReasoning = reasoningMisconception(reasoning, g.correct);
+      if (fromReasoning) {
+        repo.recordMisconception(q.concept_id, fromReasoning.label, fromReasoning.description, attempt.confidence, { kind: "lesson", id: attempt.id }, at);
+        recorded.push(fromReasoning.label);
+      } else {
+        for (const m of new Set(g.misconceptions)) {
+          repo.recordMisconception(q.concept_id, m, null, attempt.confidence, { kind: "lesson", id: attempt.id }, at);
+          recorded.push(m);
+        }
       }
       // Resolution: a correct, not-guessed answer to a question that offered the
       // misconception as a distractor, with no flawed reasoning, resolves it.
@@ -708,7 +835,7 @@ export class Engine {
         const recentSure = repo.attemptsForConcept(q.concept_id).slice(-2).every((a) => a.correct === true && a.confidence === "sure");
         for (const m of active) {
           if (targeted.has(m.label) || recentSure) {
-            repo.db.prepare("UPDATE misconceptions SET status = 'resolved', resolved_at = ? WHERE id = ?").run(at, m.id);
+            repo.resolveMisconception(q.concept_id, m.label, at, attempt.id);
           }
         }
       }
@@ -726,7 +853,8 @@ export class Engine {
           correct: g.correct,
           dontKnow: input.dontKnow,
           confidence: attempt.confidence,
-          message: feedbackMessage(g.correct, attempt.confidence, reasoning?.verdict ?? null, recorded[0] ?? null),
+          // The hint describes the option chosen, so it names the distractor's idea when there is one.
+          message: feedbackMessage(g.correct, attempt.confidence, reasoning?.verdict ?? null, g.misconceptions[0] ?? recorded[0] ?? null),
           misconceptions: recorded,
           reasoning,
           reasoningStatus,
@@ -746,17 +874,21 @@ export class Engine {
   async processPendingReasoning(limit = 5): Promise<number> {
     let done = 0;
     for (const a of this.repo.pendingReasoning().slice(0, limit)) {
+      // Claim the attempt atomically so two concurrent callers never apply the same evaluation twice.
+      if (!this.repo.claimPendingReasoning(a.id)) continue;
       const q = this.repo.getQuestion(a.question_id)!;
       let r: ReasoningEvaluation;
       try {
         r = await this.evaluateReasoning(a.lesson_id, q, a.selected, a.dont_know, a.correct, a.note ?? "");
       } catch (e) {
         if (e instanceof ProviderError && e.code === "invalid_response") this.repo.setAttemptReasoning(a.id, "failed", null);
+        else this.repo.releaseReasoningClaim(a.id);
         break;
       }
       const at = this.now().toISOString();
-      this.repo.tx(() => {
-        this.repo.setAttemptReasoning(a.id, "done", r);
+      const applied = this.repo.tx(() => {
+        // Re-check inside the transaction: only the claim holder may change evidence/misconceptions.
+        if (!this.repo.finishReasoningClaim(a.id, r)) return false;
         const items =
           r.verdict === "flawed" && a.correct
             ? [{ dimension: "explanation" as const, delta: -0.8, at, note: "written reasoning (evaluated later) was flawed" }]
@@ -764,21 +896,102 @@ export class Engine {
               ? [{ dimension: "explanation" as const, delta: a.confidence === "sure" ? 1 : 0.6, at, note: "sound written reasoning (evaluated later)" }]
               : [];
         this.repo.addEvidence(q.concept_id, null, a.id, items);
-        if (r.misconception && r.verdict === "flawed") this.repo.recordMisconception(q.concept_id, r.misconception.label, r.misconception.description, a.confidence);
+        // Same rule as when the reasoning is evaluated at once: its label replaces the distractor's
+        // misconception that was recorded for this attempt while the evaluation was pending.
+        const fromReasoning = reasoningMisconception(r, a.correct);
+        // Resolutions this answer made assumed its reasoning was not flawed; now that it is (or it
+        // expresses a misconception), retract them. Other resolutions keep the strict-newer rule.
+        if (r.verdict === "flawed" || fromReasoning) this.repo.retractResolutionsBy(a.id);
+        // The occurrence keeps the attempt's time; the ledger is keyed by the attempt, so only its
+        // own distractor contributions go, whatever happened to those rows since.
+        if (fromReasoning) {
+          this.repo.retractMisconceptions("lesson", a.id, (label) => label === fromReasoning.label);
+          // Same label already recorded for this attempt: enrich it, don't count the attempt twice.
+          if (this.repo.misconceptionContributions("lesson", a.id, fromReasoning.label).length) {
+            if (fromReasoning.description) this.repo.describeContribution("lesson", a.id, q.concept_id, fromReasoning.label, fromReasoning.description);
+          } else this.repo.recordMisconception(q.concept_id, fromReasoning.label, fromReasoning.description, a.confidence, { kind: "lesson", id: a.id }, a.created_at);
+        }
         const fb = a.lesson_id ? this.repo.listBlocks(a.lesson_id).find((b) => b.type === "feedback" && b.payload.attemptId === a.id) : undefined;
-        if (fb) this.repo.updateBlockPayload(fb.id, { ...fb.payload, reasoning: r, reasoningStatus: "done" });
+        if (fb) this.repo.updateBlockPayload(fb.id, { ...fb.payload, reasoning: r, reasoningStatus: "done", ...(fromReasoning ? { misconceptions: [fromReasoning.label] } : {}) });
+        return true;
       });
-      done++;
+      if (applied) done++;
     }
     return done;
+  }
+
+  /** Set aside the current portion without treating it as an answer or evidence of understanding. */
+  skipConcept(lessonId: string, expectedConceptId: string) {
+    return this.withLock(lessonId, async () => {
+      const lesson = this.repo.getLesson(lessonId);
+      if (!lesson) throw Object.assign(new Error("Lesson not found"), { status: 404 });
+      const state = structuredClone(lesson.state);
+      const pending = state.pendingQuestionId ? this.repo.getQuestion(state.pendingQuestionId) : undefined;
+      const isReview = pending?.purpose === "review" || (!pending && state.reviewQueue.length > 0);
+      const inDetour = state.detours.length > 0;
+      const conceptId = isReview ? pending?.concept_id ?? state.reviewQueue[0] : currentConcept(state);
+      // Two tabs or a retried click must never silently set aside the next concept too.
+      if (state.complete || conceptId !== expectedConceptId) throw Object.assign(new Error("The lesson has moved on. Use the current step to continue."), { status: 409 });
+      this.prefetch.cancel(lessonId);
+      this.repo.tx(() => {
+        this.skipPendingQuestion(lesson, state);
+        if (isReview) {
+          state.reviewQueue = [];
+        } else {
+          if (!state.deferred.includes(conceptId)) state.deferred.push(conceptId);
+          state.justReturned = null;
+          if (state.detours.length) {
+            const frame = this.applyReturn(lesson, state);
+            this.repo.appendBlock({
+              lessonId, type: "detour_end", conceptId,
+              payload: { conceptName: this.repo.getConcept(conceptId)!.name, returningTo: this.repo.getConcept(frame.fromConceptId)!.name, returnLabel: this.positionLabel(lesson, frame.returnTo.page), status: "deferred" },
+              provenance: "system",
+            });
+          } else {
+            this.advancePath(lesson, state, conceptId);
+          }
+        }
+        this.repo.appendBlock({
+          lessonId, type: "notice", conceptId,
+          payload: { kind: "skipped", message: isReview ? "Review set aside for now. Continuing with your lesson." : `${this.repo.getConcept(conceptId)!.name} is set aside for now. Your progress is saved, and you can keep going.` },
+          provenance: "system",
+        });
+        this.save(lesson, state);
+        this.repo.logEvent(lessonId, "lesson_portion_skipped", { conceptId, kind: isReview ? "review" : inDetour ? "detour" : "concept" });
+      });
+      this.bus.publish({ type: "lesson", lessonId });
+    });
+  }
+
+  /** Record an unanswered question as skipped in its block; answer keys stay hidden. */
+  private skipPendingQuestion(lesson: LessonRow, state: LessonState) {
+    if (!state.pendingQuestionId) return;
+    const block = this.repo.listBlocks(lesson.id).find((b) => b.type === "question" && b.payload.questionId === state.pendingQuestionId);
+    if (block) this.repo.updateBlockPayload(block.id, { ...block.payload, skipped: true });
+    state.pendingQuestionId = null;
   }
 
   skipReview(lessonId: string) {
     return this.withLock(lessonId, async () => {
       const lesson = this.repo.getLesson(lessonId)!;
-      this.save(lesson, { ...lesson.state, reviewQueue: [] });
+      const state = structuredClone(lesson.state);
+      this.repo.tx(() => {
+        if (state.pendingQuestionId && this.repo.getQuestion(state.pendingQuestionId)?.purpose === "review") this.skipPendingQuestion(lesson, state);
+        state.reviewQueue = [];
+        this.save(lesson, state);
+      });
     });
   }
+}
+
+/** The state change of starting a detour. Returns the page to come back to. */
+function applyDetour(state: LessonState, action: Extract<Action, { type: "detour" }>): number | null {
+  const returnPage = state.sourcePosition?.page ?? null;
+  state.detours.push({ conceptId: action.conceptId, reason: action.reason, fromConceptId: action.fromConceptId, returnTo: { conceptId: action.fromConceptId, page: returnPage } });
+  state.detourHistory.push(`${action.fromConceptId}>${action.conceptId}`);
+  state.conceptId = action.conceptId;
+  if (!state.roles[action.conceptId]) state.roles[action.conceptId] = "background";
+  return returnPage;
 }
 
 export function feedbackMessage(correct: boolean | null, confidence: string | null, reasoning: string | null, misconception: string | null): string {
@@ -790,9 +1003,116 @@ export function feedbackMessage(correct: boolean | null, confidence: string | nu
     if (confidence === "unsure") return "You weren't sure, so it's recorded as tentative; another question will confirm it.";
     return "";
   }
-  const hint = misconception ? `The option you chose usually reflects this idea: *${misconception}*.` : "";
+  // Labels are often full sentences; drop their end punctuation so the hint doesn't end in "….*."
+  const idea = misconception?.trim().replace(/[\s.!?;:,]+$/, "");
+  const hint = idea ? `The option you chose usually reflects this idea: *${idea}*.` : "";
   if (confidence === "sure") return `Because you were sure, this looks like a firmly held idea worth examining. ${hint}`.trim();
   return hint;
+}
+
+/** The misconception the reasoning evaluator diagnosed, when it counts: flawed reasoning, or a wrong answer. */
+export function reasoningMisconception(r: ReasoningEvaluation | null, correct: boolean | null) {
+  return r?.misconception && (r.verdict === "flawed" || correct === false) ? r.misconception : null;
+}
+
+const NUMBER_WORDS = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve"];
+
+/** Standalone numbers in a text ("−3", "0.5", "1,000"), ignoring digits inside identifiers ("chr21", "2D", "x_1"). */
+function numbersIn(text: string): Set<string> {
+  const out = new Set<string>();
+  for (const m of text.replace(/(\d),(\d{3})(?!\d)/g, "$1$2").matchAll(/(?<![\p{L}\p{N}_.])\d+(?:\.\d+)?(?![\p{L}\p{N}_])/gu)) out.add(String(Number(m[0])));
+  return out;
+}
+
+/**
+ * The learner sees only the stem and options; "scenario" is a hidden tag. A scenario carrying data
+ * the stem lacks (e.g. "candidate scores −3, −1, −4" behind a stem that says "at this cell") makes the
+ * question unanswerable. Conservative: it takes at least two missing numbers, at least half of the
+ * scenario's numbers, and a number written as a word in the stem ("two states") counts as shown.
+ */
+export function scenarioDataProblem(q: { stem: string; scenario: string; options: { label: string }[] }): string | null {
+  const hidden = numbersIn(q.scenario);
+  if (hidden.size < 2) return null;
+  const shown = `${q.stem}\n${q.options.map((o) => o.label).join("\n")}`;
+  const visible = numbersIn(shown);
+  NUMBER_WORDS.forEach((w, n) => new RegExp(`\\b${w}\\b`, "i").test(shown) && visible.add(String(n)));
+  const missing = [...hidden].filter((n) => !visible.has(n));
+  if (missing.length < 2 || missing.length * 2 < hidden.size) return null;
+  return `"scenario" contains values (${missing.join(", ")}) that appear in neither the stem nor the options, but the learner sees only the stem and options. Put every value the question needs into the stem, and keep "scenario" a short label without data.`;
+}
+
+// ── Source text sent to the model ───────────────────────────────────────────
+
+/** Fewer non-space characters than this: a figure, handwriting or a bare title, not teachable text. */
+const NEAR_EMPTY_CHARS = 20;
+
+/**
+ * Lines (≥ 20 chars) repeated on at least half of a document's pages: copyright banners and
+ * running headers. Stripped only from text sent to the model; stored pages are never rewritten.
+ */
+export function boilerplateLines(pages: string[]): Set<string> {
+  const lines = new Set<string>();
+  if (pages.length < 4) return lines;
+  const counts = new Map<string, number>();
+  for (const page of pages) {
+    for (const line of new Set(page.split("\n").map((l) => l.trim()))) if (line.length >= 20) counts.set(line, (counts.get(line) ?? 0) + 1);
+  }
+  for (const [line, n] of counts) if (n >= Math.max(3, pages.length / 2)) lines.add(line);
+  return lines;
+}
+
+export function stripBoilerplate(text: string, boilerplate: Set<string>): string {
+  if (!boilerplate.size) return text.trim();
+  return text
+    .split("\n")
+    .filter((l) => !boilerplate.has(l.trim()))
+    .join("\n")
+    .trim();
+}
+
+export function isNearEmpty(text: string): boolean {
+  return text.replace(/\s+/g, "").length < NEAR_EMPTY_CHARS;
+}
+
+/** Analysis input: boilerplate removed, and pages without usable text marked so the model doesn't invent them. */
+export function analysisPages(pages: string[], boilerplate = boilerplateLines(pages)): { page: number; text: string }[] {
+  const clean = pages.map((t) => stripBoilerplate(t, boilerplate));
+  const withText = clean.filter((t) => !isNearEmpty(t)).length;
+  const perPage = Math.max(300, Math.min(PAGE_CHARS, Math.floor(ANALYSIS_CHARS / Math.max(1, withText))));
+  return clean.map((text, i) => {
+    const page = i + 1;
+    if (!isNearEmpty(text)) return { page, text: text.slice(0, perPage) };
+    const fragment = text.replace(/\s+/g, " ").trim();
+    return {
+      page,
+      text: fragment
+        ? `[page ${page}: only a short fragment is extractable; the rest is a figure, handwriting or a title] ${fragment}`
+        : `[page ${page}: no extractable text — figure or handwriting]`,
+    };
+  });
+}
+
+/**
+ * Pages for a concept's excerpt: its mapped pages first (in the analysis's order), then pages
+ * just after them (a title slide is usually followed by its content) and just before, skipping
+ * pages without usable text, until the character budget is spent.
+ */
+export function excerptPages(pages: string[], mapped: number[], budget: number, boilerplate = boilerplateLines(pages)): { page: number; text: string }[] {
+  const order: number[] = [];
+  const add = (p: number) => p >= 1 && p <= pages.length && !order.includes(p) && order.push(p);
+  mapped.forEach(add);
+  for (const d of [1, 2, 3, 4, -1]) mapped.forEach((p) => add(p + d));
+  const out: { page: number; text: string }[] = [];
+  let left = budget;
+  for (const p of order) {
+    if (left < 200 || out.length >= 8) break;
+    const text = stripBoilerplate(pages[p - 1] ?? "", boilerplate);
+    if (isNearEmpty(text)) continue;
+    const slice = text.slice(0, Math.min(PAGE_CHARS, left));
+    out.push({ page: p, text: slice });
+    left -= slice.length;
+  }
+  return out.sort((a, b) => a.page - b.page);
 }
 
 /** Drop analysis pages outside the document and names missing from the concept list. */

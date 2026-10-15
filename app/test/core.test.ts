@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { coerceCorrectAnswer, grade, normalizeOptions, optionShapeProblem, resolveCorrect, seededRandom, shuffle } from "../src/shared/grading.ts";
+import { coerceCorrectAnswer, grade, hiddenOptionReference, normalizeOptions, optionShapeProblem, resolveCorrect, seededRandom, shuffle, visibleOptionRefs } from "../src/shared/grading.ts";
 import { computeMastery, dimensionState, evidenceFromAttempt, type EvidenceItem } from "../src/shared/mastery.ts";
 import { parrotingScore, questionSimilarity, repetitionProblem } from "../src/shared/similarity.ts";
 import { extractSections } from "../src/server/ai/principles.ts";
@@ -49,6 +49,28 @@ const T0 = "2026-01-01T00:00:00.000Z";
 const at = (min: number) => new Date(Date.parse(T0) + min * 60_000).toISOString();
 const ev = (facts: Parameters<typeof evidenceFromAttempt>[0], min: number) => evidenceFromAttempt(facts, at(min));
 const base = { context: "original" as const, purpose: "check" as const, reasoning: null };
+
+describe("option references in generated feedback", () => {
+  // Display order after shuffling: D, C, B, A (the live ChatGPT run's diagnostic).
+  const shown = normalizeOptions(["D", "C", "B", "A"].map((v) => ({ value: v, label: `claim ${v}` })));
+
+  it("rewrites value references to the choice number the learner sees", () => {
+    expect(visibleOptionRefs("Option B reverses outcome and event; (A) is correct.", shown)).toBe("Option 3 reverses outcome and event; (choice 4) is correct.");
+    expect(visibleOptionRefs("Choices C and the rest", shown)).toBe("Choice 2 and the rest");
+  });
+
+  it("leaves math and ordinary prose alone", () => {
+    const text = "So P(A) = 0.3, and $P(A \\mid B)$ answers a question about B. The answer is 1/3.";
+    expect(visibleOptionRefs(text, shown)).toBe(text);
+    expect(hiddenOptionReference(text, shown)).toBeNull();
+  });
+
+  it("flags references the learner cannot resolve", () => {
+    expect(hiddenOptionReference("The second option confuses the two.", shown)).toMatch(/shuffled/);
+    expect(hiddenOptionReference("Option E is a trap.", shown)).toMatch(/not an option value/);
+    expect(hiddenOptionReference("Option B reverses them.", shown)).toBeNull();
+  });
+});
 
 describe("mastery evidence", () => {
   it("SCENARIO 1: a correct answer with low confidence records uncertainty, not mastery", () => {

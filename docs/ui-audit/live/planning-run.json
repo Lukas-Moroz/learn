@@ -1,0 +1,27 @@
+{
+  "startedAt": "2026-10-08T20:11:51.959Z",
+  "url": "http://127.0.0.1:4317",
+  "steps": [],
+  "errors": [],
+  "api": [
+    {
+      "path": "/api/lessons",
+      "status": 200,
+      "elapsedMs": 16794
+    }
+  ],
+  "provider": {
+    "id": "openai",
+    "model": "gpt-5.6-sol",
+    "state": "ready"
+  },
+  "dataDir": "/Users/achu9972/.learn",
+  "lessonId": "7a44f887-4846-430b-92dc-34e7055b32a4",
+  "status": "failed",
+  "failure": {
+    "message": "apiRequestContext.get: Invalid URL",
+    "stack": "apiRequestContext.get: Invalid URL\n    at view (/Users/achu9972/Documents/GitHub/learn/docs/ui-audit/live-generation.mjs:47:52)\n    at /Users/achu9972/Documents/GitHub/learn/docs/ui-audit/live-generation.mjs:73:21\n    at async step (/Users/achu9972/Documents/GitHub/learn/docs/ui-audit/live-generation.mjs:40:3)\n    at async file:///Users/achu9972/Documents/GitHub/learn/docs/ui-audit/live-generation.mjs:61:3"
+  },
+  "fallbackRestored": true,
+  "finishedAt": "2026-10-08T20:12:09.103Z"
+}

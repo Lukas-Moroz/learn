@@ -12,8 +12,9 @@ function callout(type: string, title: string, body: string[]): string {
 const split = (s: string) => s.split("\n");
 
 function sourceLine(refs: SourceRef[], provenance: string): string {
-  if (refs.length) return `*Source: ${refs.map((r) => r.label ?? `p. ${r.page}`).join("; ")}*`;
-  return provenance === "supplementary" ? "*Supplementary explanation (AI-generated, not from the source).*" : "";
+  const pages = refs.map((r) => r.label ?? `p. ${r.page}`).join("; ");
+  if (provenance === "supplementary") return `*Supplementary explanation (AI-generated, not from the source).${pages ? ` Related: ${pages}` : ""}*`;
+  return pages ? `*Source: ${pages}*` : "";
 }
 
 function questionCallout(q: QuestionView): string {
